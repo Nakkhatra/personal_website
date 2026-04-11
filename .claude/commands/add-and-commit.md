@@ -8,13 +8,19 @@ You are performing a git workflow. Follow these steps exactly:
 
 ## 1. Check main branch exists
 ```bash
-git rev-parse --verify main > /dev/null 2>&1 || { echo "ERROR: main branch doesn't exist. Run /bootstrap first."; exit 1; }
+git rev-parse --verify main
 ```
+If this fails: main branch doesn't exist. Tell the user to run `/bootstrap` first. Stop.
 
-## 2. Sync with remote
+## 2. Sync with remote (if remote exists)
+```bash
+git remote get-url origin
+```
+If a remote exists, pull:
 ```bash
 git pull origin main --rebase
 ```
+If no remote, skip this step.
 
 ## 3. Analyze changes
 Run `git status` and `git diff` to understand what changed. Identify ONLY the files that are necessary for this change. Exclude:
