@@ -30,6 +30,17 @@ export default function Publications() {
                 <p className="text-sm text-text-muted mt-0.5">
                   {pub.venue} &middot; {pub.year}
                 </p>
+                {pub.dataset && (
+                  <a
+                    href={pub.dataset}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors mt-2"
+                  >
+                    <ExternalLink size={14} />
+                    Dataset
+                  </a>
+                )}
               </div>
               {pub.url && (
                 <a
