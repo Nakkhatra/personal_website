@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #0B1D26;
+    --surface: #112B38;
+    --surface-hover: #153545;
+    --border: #1A3A4A;
+    --text-primary: #EDEDED;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --accent: #C8875A;
+    --accent-hover: #D4956B;
+    --accent-muted: rgba(200, 135, 90, 0.125);
+  }
+
+  body {
+    @apply bg-background text-text-secondary font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-text-primary;
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-text-primary;
+  }
+}

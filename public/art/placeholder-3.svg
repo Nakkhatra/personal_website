@@ -1,0 +1,7 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#0B1D26"/>
+  <path d="M 0 300 Q 200 200 400 300 T 800 300 L 800 600 L 0 600 Z" fill="#112B38"/>
+  <path d="M 0 350 Q 200 250 400 350 T 800 350 L 800 600 L 0 600 Z" fill="#94A3B8" opacity="0.6"/>
+  <path d="M 0 200 Q 200 100 400 200 T 800 200 L 800 0 L 0 0 Z" fill="#C8875A" opacity="0.7"/>
+  <path d="M 0 150 Q 200 50 400 150 T 800 150 L 800 0 L 0 0 Z" fill="#112B38" opacity="0.5"/>
+</svg>
