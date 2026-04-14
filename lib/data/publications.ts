@@ -4,6 +4,7 @@ export interface Publication {
   venue: string;
   year: number;
   url?: string;
+  dataset?: string;
 }
 
 export const publications: Publication[] = [
@@ -13,5 +14,6 @@ export const publications: Publication[] = [
     venue: "arXiv preprint arXiv:2206.14053",
     year: 2022,
     url: "https://arxiv.org/abs/2206.14053",
+    dataset: "https://github.com/BengaliAI/commonvoice-bangla",
   },
 ];

@@ -26,10 +26,10 @@ export const siteConfig = {
 
   navLinks: [
     { label: "Home", href: "/" },
+    { label: "Resume", href: "/resume" },
+    { label: "Research", href: "/research" },
     { label: "Projects", href: "/projects" },
     { label: "Blog", href: "/blogs" },
     { label: "Art", href: "/art" },
-    { label: "Research", href: "/research" },
-    { label: "Resume", href: "/resume" },
   ],
 } as const;
