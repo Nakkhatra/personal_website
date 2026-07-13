@@ -13,7 +13,7 @@ export default function ArtPage() {
         <div className="mb-12">
           <h1 className="text-4xl font-bold tracking-tight">Art</h1>
           <p className="mt-3 text-text-secondary">
-            Creative explorations as a counterbalance to engineering.
+            Well! I've been into graphite/color pencil/pen sketches since childhood, later I did a few digital paintings and tried out a few acrylics! Embedded my instagram art blog, check it out!
           </p>
         </div>
         <InstagramFeed username="n_artholic" />
