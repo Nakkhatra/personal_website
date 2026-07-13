@@ -1,0 +1,110 @@
+---
+title: "Building an AI-Powered Travel Claim Validation Pipeline"
+description: "How I designed and deployed a production pipeline that uses Claude AI to extract and validate employee travel expense claims — covering the full journey from problem framing to nightly cron on a company VM."
+date: "2026-07-13"
+tags: ["Claude AI", "AWS Bedrock", "Python", "Docker", "SFTP", "Data Engineering", "LLM"]
+published: true
+---
+
+## The Problem
+
+Robi Axiata processes hundreds of employee travel expense claims every month. Each claim consists of a structured JSON payload from the internal workflow system — declaring trip dates, destinations, expense amounts — and a set of scanned PDF receipts as attachments. Finance reviewers were manually cross-checking these two sources, which was slow, inconsistent, and error-prone.
+
+The ask: automate the cross-check. Flag suspect claims. Get results into reviewers' hands every morning.
+
+---
+
+## What the Pipeline Does
+
+At a high level, the pipeline:
+
+1. Downloads claim JSONs, PDFs, and supporting CSVs from an SFTP server
+2. Sends PDFs to Claude Sonnet (via AWS Bedrock) for structured receipt extraction
+3. Cross-references extracted amounts, names, and dates against the declared JSON payload
+4. Applies accommodation policy caps based on employee HRL grade
+5. Checks whether the declared trip location matches the employee's known geographic presence
+6. Writes a validation report (CSV + JSON + Excel) and persists results to SQLite
+7. Uploads outputs to SFTP and cleans up stale input files
+
+Each night's run covers claims from D, D-1, and D-2 — claims already processed without errors are skipped automatically.
+
+---
+
+## Tech Stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Language | Python 3.12 | Team familiarity, rich ML/data ecosystem |
+| LLM | Claude Sonnet 4.6 via AWS Bedrock | Structured tool-use output, strong OCR on scanned receipts, existing AWS account |
+| Fuzzy matching | rapidfuzz | Fast, `token_sort_ratio` handles name variations and thana spelling diversity |
+| PDF processing | pdf2image + OpenCV | Convert pages to images before sending to the vision model |
+| Data | pandas + SQLite | Lightweight, no infra overhead; results queryable by Finance |
+| Config | YAML + frozen dataclasses | Immutable configs caught several misconfiguration bugs early |
+| SFTP | paramiko | Bidirectional file exchange with the internal IT SFTP server |
+| Packaging | uv | Fast dependency resolution, lockfile for reproducibility |
+| Deployment | Docker + Ubuntu VM + cron | Simple, auditable, no Kubernetes overhead for a nightly batch job |
+
+---
+
+## The Journey
+
+### Stage 1 — Extraction
+
+The first real challenge was getting structured data out of scanned receipts. The PDFs ranged from clean digital prints to badly photographed handwritten bills.
+
+I settled on a two-step approach: pdf2image converts each page to a compressed JPEG, then Claude Sonnet receives all pages for a case in a single prompt via a tool-use schema. The schema forces the model to output structured fields — amounts by category (accommodation, transport, food), person counts, travel metadata, receipt dates — rather than free text. This made downstream validation deterministic.
+
+Early runs surfaced edge cases: encrypted PDFs, blank pages, Bengali-script receipts, and handwritten amounts. I added quality flags for each (`bad_document_quality`, `has_handwriting`, `has_bengali`) that feed into the final review score.
+
+### Stage 2 — Validation
+
+With extracted data in hand, validation became a three-level problem:
+
+**Amount matching** — compare declared totals (from JSON) against extracted totals (from PDFs) at two levels: an overall L1 check and a per-category L2 breakdown. The threshold is 1% deviation, configurable.
+
+**Identity matching** — verify the employee name on receipts matches the claimant. `token_sort_ratio` at threshold 70 handles transcription variation. Name + date matching produces a composite score; below 20 triggers review (only when attachments exist).
+
+**Policy enforcement** — accommodation reimbursement is capped per night based on employee HRL grade (e.g., D18 → 5,000 BDT/night, B23 and above → no cap). The HRL is looked up from a daily-refreshed `emp_hrl.csv` IT drops on SFTP, keyed by employee ID.
+
+### Stage 3 — Location Plausibility
+
+The third validation dimension came later: does the declared trip destination make sense for where this employee actually was?
+
+An external OPS service receives a CSV of MSISDNs with trip date ranges (`emp_number_{date}.csv`), runs network location queries, and deposits a result CSV (`emp_location_{date}.csv`) with each subscriber's detected location and up to 5 neighbouring cells.
+
+The locations are in `"District-Thana"` format. The pipeline constructs the same format from the claim's `tripFrom`/`tripTo` and `thanaFrom`/`thanaTo` fields, then fuzzy-matches using `token_sort_ratio` at threshold 85. A single match across any row or neighbour column is enough to pass. If the MSISDN isn't in the CSV (service didn't process it) the flag is `unidentified`; if it's in the CSV but nothing matched it's `not_match`.
+
+### The Date Rollover Problem
+
+The MSISDN CSV is generated at 23:59 using today's date as the filename. The main pipeline runs at ~00:05 — by which point the calendar has rolled over. The location service uses the filename date to know which CSV to produce.
+
+Fix: `generate_msisdn_csv.py` writes the run-date string to `data/.run_date` immediately after generating the CSV. The main pipeline reads this file at startup, so even at 00:05 it's looking for `emp_location_20260713.csv` not `20260714`.
+
+### Stage 4 — Cleanup
+
+Claim JSONs and PDFs accumulate on SFTP. After upload, the pipeline lists `sftp/input/`, parses the YYYYMMDD embedded in each filename, and deletes anything strictly older than D-2 from the run-date. Files without a parseable date (like `emp_hrl.csv`) are left untouched.
+
+---
+
+## Deployment
+
+The pipeline runs on an internal Ubuntu VM at Robi. The cron schedule:
+
+```
+59 23 * * *  # generate MSISDN CSV, save run-date
+05 00 * * *  # main pipeline: download → poll location → extract → validate → upload → cleanup
+```
+
+The main pipeline polls SFTP every 5 minutes for up to 3 hours waiting for the location CSV before proceeding without it. This gives OPS a comfortable window while keeping the report ready before the Finance team's morning stand-up.
+
+Docker wraps the whole thing for consistent dependency management across environments. The image is built from a slim Python base with `poppler-utils` for PDF rendering.
+
+---
+
+## What I'd Do Differently
+
+**Async extraction.** Claude calls are made with a thread pool (`max_workers=4`) right now. True async I/O with `asyncio` + `aiofiles` would be cleaner and likely faster for large batches.
+
+**Schema versioning.** The extraction tool schema evolved several times. A proper versioned schema registry would have made it easier to replay old runs against new schemas.
+
+**Observability.** Rotating log files work for a nightly job, but a lightweight Prometheus + Grafana setup would give better visibility into token spend, extraction error rates, and per-category deviation trends over time.

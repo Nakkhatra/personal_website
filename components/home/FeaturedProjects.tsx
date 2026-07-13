@@ -46,6 +46,13 @@ const featuredProjects = [
     company: "Robi Axiata",
     topics: ["ML", "Customer Analytics"],
   },
+  {
+    name: "Travel Claim Validation Pipeline",
+    description:
+      "Automated end-to-end pipeline that validates employee travel expense claims using Claude Sonnet (AWS Bedrock) for PDF receipt extraction, fuzzy name/amount matching, HRL-based policy enforcement, and subscriber location plausibility checks via SFTP-integrated location data. Containerised with Docker and deployed on an Ubuntu VM with a nightly cron schedule.",
+    company: "Robi Axiata",
+    topics: ["Claude AI", "AWS Bedrock", "Python", "Docker", "SFTP", "SQLite", "rapidfuzz"],
+  },
 ];
 
 export default function FeaturedProjects() {
