@@ -49,8 +49,8 @@ const featuredProjects = [
   {
     name: "Travel Claim Validation Pipeline",
     description:
-      "Automated end-to-end pipeline that validates employee travel expense claims using Claude Sonnet (AWS Bedrock) for PDF receipt extraction, fuzzy name/amount matching, HRL-based policy enforcement, and subscriber location plausibility checks via SFTP-integrated location data. Containerised with Docker and deployed on an Ubuntu VM with a nightly cron schedule.",
-    company: "Robi Axiata",
+      "Automated end-to-end pipeline that validates employee travel expense claims using Claude Sonnet (AWS Bedrock) for PDF receipt extraction, fuzzy name/amount matching, policy-based cap enforcement, and subscriber location plausibility checks. Containerised with Docker and deployed on an Ubuntu VM with a nightly cron schedule.",
+    company: "Professional",
     topics: ["Claude AI", "AWS Bedrock", "Python", "Docker", "SFTP", "SQLite", "rapidfuzz"],
   },
 ];
