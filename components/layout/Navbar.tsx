@@ -13,6 +13,7 @@ import {
 } from "framer-motion";
 import { siteConfig } from "@/lib/data/siteConfig";
 import Container from "./Container";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const MotionLink = motion.create(Link);
 
@@ -83,8 +84,11 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* CTA + mobile toggle */}
-          <div className="flex items-center gap-3">
+          {/* CTA + theme toggle + mobile toggle */}
+          <div className="flex items-center gap-2">
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
             <a
               href={`mailto:${siteConfig.email}`}
               className="hidden md:inline-flex px-5 py-2 text-sm font-medium rounded-full bg-accent text-background hover:bg-accent-hover transition-colors animate-contact-glow"
@@ -152,6 +156,13 @@ export default function Navbar() {
                   >
                     Contact Me
                   </a>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: (siteConfig.navLinks.length + 1) * 0.05 }}
+                >
+                  <ThemeToggle inline />
                 </motion.div>
               </div>
             </Container>
