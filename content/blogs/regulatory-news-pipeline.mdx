@@ -1,0 +1,210 @@
+---
+title: "Regulatory News Extraction Pipeline: Multi-Country Intelligence & Claude-Driven Categorization"
+description: "How I built a production pipeline that autonomously searches, fetches, and extracts regulatory news across 60+ countries with AI-powered topic classification and hierarchical report generation."
+date: "2026-07-15"
+tags: ["Claude AI", "AWS Bedrock", "Python", "NLP", "Data Engineering", "Research", "LLM"]
+published: true
+---
+
+## The Problem
+
+A telecom industry organization needed daily intelligence on regulatory changes, M&A, and infrastructure developments across 60+ countries. Manual research teams couldn't scale. They needed:
+
+- Automated discovery of regulatory announcements and news
+- Consistent classification into meaningful topics (SMP regulations, spectrum auctions, M&A, etc.)
+- Source credibility ordering (official regulator sites first, news aggregators second, trade press third)
+- Daily reports structured by country and topic
+- Compact index reports highlighting priority sources with visual badges
+
+The ask: build a system that autonomously discovers regulatory news, categorizes it accurately, and delivers structured intelligence every day.
+
+---
+
+## What the Pipeline Does
+
+At a high level:
+
+1. **Search phase** — Issues 200+ searches across countries and themes (SMP, spectrum, M&A, etc.) using SerpAPI
+2. **Fetch phase** — Downloads URLs in parallel with BM25 ranking to surface most relevant pages
+3. **Proactive regulatory fetch** — Injects content from known government/regulator/operator sites
+4. **Claude extraction** — Sends ranked results to Claude with rule-based tiering (PRIMARY/SECONDARY/LOW_RELEVANCE) and custom topic categories
+5. **Report generation** — Formats findings as markdown with country → topic → source tier hierarchy
+6. **Index generation** — Creates compact index with emoji-highlighted sources (🏛️ regulatory, 📰 news, 🔗 other)
+
+The entire pipeline is resumable — if it fails at 80%, the next run skips completed searches and resumes from checkpoints.
+
+---
+
+## Tech Stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Language | Python 3.12 | Rich ML/data ecosystem; async support |
+| LLM | Claude Sonnet via AWS Bedrock | Structured XML output, strong document handling |
+| Search | SerpAPI | News-focused, reliable for telecom regulatory results |
+| Fetcher | requests + ThreadPoolExecutor + BM25 | Parallel downloads with intelligent ranking |
+| PDF extraction | pdfplumber + pypdf | Robust text extraction with fallbacks |
+| Report markup | Markdown + emoji badges | Human-readable, easy to version control |
+| Config | TOML + .env | Hierarchical parameters with secret isolation |
+| Backup | pickle + JSON | Dual-format for fast resume + debugging |
+
+---
+
+## The Journey
+
+### Stage 1 — Search Configuration at Scale
+
+Searching for "regulatory news" across 60 countries and 9 themes requires careful orchestration:
+
+- **Theme matrix** — Each theme (SMP, spectrum, M&A, etc.) is a separate search per country, yielding ~500+ queries
+- **Fan-out** — Execute searches sequentially with rate limiting to respect SerpAPI quotas
+- **Google News fallback** — SerpAPI's primary engine. If < 5 results, auto-switch to `google_ai_mode` for ranking-enhanced results
+- **Consolidation** — Merge results from multiple themes per country, deduplicate
+
+One insight: combining too many countries/themes in one query dilutes results. A query "SMP regulation in India AND Pakistan AND Nepal" returns generic hits. Solution: one query per country per theme.
+
+### Stage 2 — Content Fetching & BM25 Ranking
+
+Search results include snippets but not full articles. The real content is fetched separately:
+
+- **Parallel fetching** — ThreadPoolExecutor with 8 workers downloads top 5 URLs per search in parallel
+- **HTML extraction** — BeautifulSoup + regex cleaners remove noise
+- **PDF extraction** — pdfplumber for text; pypdf as fallback. Handle corrupted metadata gracefully
+- **BM25 ranking** — Score pages by keyword density. Top 3 ranked pages per URL are sent to Claude (not all pages)
+
+This ensures Claude sees the highest-signal content from each URL, not noise.
+
+### Stage 3 — Proactive Regulatory Source Injection
+
+Search favors news aggregators over regulator websites. Official sources matter most, so I added targeted fetching:
+
+- **Source registry** — CSV of known regulatory bodies, government portals, and operator newsrooms mapped to countries and topics
+- **Topic-source matching** — If searching for "SMP regulations" in India, fetch TRAI website directly
+- **Index expansion** — For list-page URLs (`/notices`, `/press-releases`), parse and extract per-article links before ranking
+- **Injection strategy** — Add these high-confidence sources as top-ranked results, giving Claude priority
+
+Result: official sources now surface consistently, even if news aggregators dominate search rankings.
+
+### Stage 4 — Claude Extraction with Rule-Based Tiering
+
+Raw search results → Claude extraction is complex without clear rules. I built a three-tier relevance framework:
+
+**PRIMARY (always CONFIRMED if in date range):**
+- Spectrum allocation, operator licensing, regulator enforcement
+- Any decision explicitly naming a mobile operator
+
+**SECONDARY (CONFIRMED only if operator/regulator named):**
+- Broadband policy, cybersecurity rules, mobile money regulation
+- Requires credible source + named entity
+
+**LOW RELEVANCE (always MIGHT_BE_IMPORTANT):**
+- ISP licensing (fixed-line only), admin notices, generic background
+- Still included, but flagged for stakeholder review
+
+Claude receives this as XML, plus 25 topic categories (SMP, spectrum, M&A, taxation, devices, partnerships, etc.), and outputs structured entries with:
+- Headline, body, sources, tier (CONFIRMED/CONTEXT/MIGHT_BE_IMPORTANT/BORDERLINE)
+- Country, date
+- Source tier (TIER1/TIER2/TIER3/BORDERLINE)
+- Topic category (single or comma-separated if multi-topic)
+
+### Stage 5 — Country → Topic → Tier Hierarchy
+
+Raw entries are a flat list of 800+ items. Stakeholders need structure:
+
+**Level 1: Country** (e.g., India, Bangladesh, EU)
+**Level 2: Topic** (e.g., SMP Regulations, Spectrum Auctions)
+**Level 3: Source Tier**
+- Tier A: Regulatory/government sources (BTRC, TRAI, DoT, etc.)
+- Tier B: News sources (Daily Star, Reuters, Economics Times, etc.)
+- Tier C: Trade press (Developing Telecoms, Telecompaper, etc.)
+
+Within each Tier, entries are sorted by date (newest first). Topics are ordered by canonical importance (SMP first, then spectrum, then others).
+
+### Stage 6 — Emoji Highlighting in Index Report
+
+The index report groups entries by publisher within each topic. To highlight source credibility, I added emoji badges:
+
+- 🏛️ **Regulatory source** — Official government/regulator/competition authority
+- 📰 **News source** — Quality national news / industry aggregators (from regulatory_sources.csv)
+- 🔗 **Other sources** — Trade press, specialist sites
+
+These badges appear in the markdown, making it instant-obvious which entries are official vs. news coverage.
+
+### Stage 7 — Multi-Bucket Classification
+
+The system initially had one topic per entry. Stakeholders wanted cross-tagging: an entry about "Bharti Airtel acquiring 5G spectrum in partnership with a government agency" should be tagged as both **M&A** and **Government Partnerships**.
+
+Solution: allow Claude to output comma-separated topics (e.g., "Merger and Acquisitions, Government and Telecom Operator Partnerships"). The parser splits on `,` and duplicates the entry into each topic bucket. Result: proper coverage without data duplication.
+
+### Stage 8 — Backup & Resume Across Phases
+
+Runs take 4-6 hours. Mid-run failures meant restarting from scratch.
+
+I implemented three-level checkpoints:
+
+1. **Search backup** — After every search, append to pkl backup. On restart, load and skip completed searches.
+2. **Enriched backup** — After fetching all URLs, save SearchItem objects with `fetched_content` populated. This enables re-runs of Claude extraction without re-fetching.
+3. **Claude progress** — After every 5 Claude calls, save processed IDs and results. On restart, skip finished items.
+
+Pattern: use existing enriched backup to skip Search+Fetch phases, re-run just Claude extraction with updated prompts. Turns a 4-hour run into 30 minutes.
+
+### The Module Path Compatibility Bug
+
+The enriched backup was created when the source tree was called `pipeline/`, then renamed to `src/`. Loading old pickles with the new path failed: `No module named 'pipeline'`.
+
+Fix: add a sys.modules shim in backup.py:
+```python
+import sys
+import src.models as _src_models
+for _old in ("pipeline", "pipeline.models"):
+    if _old not in sys.modules:
+        sys.modules[_old] = _src_models
+```
+
+This lets pickle find old class definitions under the new path.
+
+### The Config Path Resolution Bug
+
+Config loading used `Path("config.toml").parent` to find the project root. When config.toml is relative (which it is in production), `.parent` returns `.` (current dir), not the project root. This caused .env to be looked up in the wrong place, breaking AWS authentication.
+
+Fix: use `Path(config_path).resolve().parent` to convert relative paths to absolute before calling `.parent`.
+
+### Stage 9 — New Topic Buckets
+
+Initial stakeholder feedback identified three missing topics. I added:
+
+- **Telecom Taxation Policy and Compliance** — VAT/GST changes, spectrum taxes, digital service taxes
+- **Smartphone and Telecom Device Regulations** — Device approval, SAR standards, import duties
+- **Government and Telecom Operator Partnerships** — Strategic infrastructure partnerships, broadband initiatives
+
+All 25 topics are now processed, ordered canonically, and integrated into both extraction prompt and report generation.
+
+---
+
+## Deployment & Operations
+
+The pipeline runs on-demand and nightly:
+
+- **Test mode** — Single country (Bangladesh only) to validate new buckets/prompts before production
+- **Production mode** — All 60+ countries, generates full report + index report
+- **Resumes** — Enabled via `use_existing_backup` config; skip search/fetch, re-extract from cached data
+
+Key monitoring:
+- Source fetch success rate (% of regulatory_sources.csv that returned content)
+- Extraction yield (# entries per country per topic)
+- Claude token usage (input/output efficiency)
+- Deduplication ratio (# potential duplicates removed)
+
+---
+
+## What I'd Do Differently
+
+**Distributed search.** 500+ queries sequentially takes hours. Async search with concurrent requests would be faster (while respecting rate limits).
+
+**Incremental indexing.** Right now the entire search runs daily. Tracking newest-seen-date per source and fetching only delta-since-date would reduce API calls.
+
+**Schema versioning.** The extraction XML schema evolved. A versioned schema registry would simplify re-running old backups against new schemas.
+
+**ML-based deduplication.** Current dedup is rule-based (same URL + headline). A learned similarity model (e.g., semantic embeddings) would catch true duplicates missed by exact matching.
+
+**Real-time streaming.** Extract results as they arrive from Claude rather than batch. Enables stakeholders to start reading results mid-pipeline.

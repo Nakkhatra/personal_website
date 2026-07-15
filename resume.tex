@@ -1,0 +1,225 @@
+%------------------------
+% Modern Professional Resume
+% Enhanced Visual Design
+%------------------------
+
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[pdftex]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{fontawesome5}
+\usepackage{charter}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Muted Professional Color Palette
+\definecolor{primary}{RGB}{31, 58, 96}
+\definecolor{accent}{RGB}{70, 130, 140}
+\definecolor{accentlight}{RGB}{100, 150, 160}
+\definecolor{darktext}{RGB}{45, 45, 45}
+\definecolor{lightgray}{RGB}{240, 240, 240}
+
+% Sections formatting with background
+\titleformat{\section}{
+  \vspace{-10pt}
+}{}{0em}{}
+
+\newcommand{\sectionTitle}[2]{
+  \vspace{8pt}
+  \noindent
+  \begin{tikzpicture}
+    \fill[accent!20] (0,0) rectangle (\textwidth, 0.65cm);
+    \fill[accent] (0,0) rectangle (0.4cm, 0.65cm);
+    \node[anchor=west, inner sep=0pt] at (0.6cm, 0.325cm) {\large\bfseries\color{primary}#1~\textcolor{accent}{#2}};
+  \end{tikzpicture}
+  \vspace{2pt}
+}
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{#1 \vspace{-2pt}}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{\color{primary}#1} & \textcolor{darktext}{\small\textit{#2}} \\
+      \textcolor{accent}{\small\textit{#3}} & \textcolor{darktext}{\small\textit{#4}} \\
+    \end{tabular*}\vspace{-5pt}
+}
+
+\newcommand{\resumeSubItem}[2]{
+  \item\small{\textbf{\color{primary}#1:} #2\vspace{-2pt}}
+}
+
+\renewcommand{\labelitemii}{\textcolor{accent}{$\bullet$}}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.2in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-4pt}}
+
+%-----------------------------
+\begin{document}
+\setstretch{1.08}
+
+%----------HEADING-----------------
+% Photo in top right
+\begin{tikzpicture}[remember picture, overlay]
+    \node[anchor=north east, inner sep=0pt] at ([shift={(-1.3cm,-1.3cm)}]current page.north east) {
+        \begin{tikzpicture}
+            \clip (0,0) circle (2.1cm);
+            \node at (2.1cm,2.1cm) {\includegraphics[width=4.2cm]{photo.jpeg}};
+            \draw[line width=3pt, color=accent] (0,0) circle (2.1cm);
+        \end{tikzpicture}
+    };
+\end{tikzpicture}
+
+% Accent bar at top
+\begin{tikzpicture}[remember picture, overlay]
+    \fill[primary] (current page.north west) rectangle ([shift={(0,-0.8cm)}]current page.north east);
+\end{tikzpicture}
+
+\vspace{0.8cm}
+
+\begin{minipage}[t]{0.63\textwidth}
+    \vspace{0pt}
+    {\Huge\bfseries\color{primary} Md. Shahrin Nakkhatra} \\[3pt]
+    {\large\color{accent}\textit{Machine Learning Engineer \& Data Scientist}}
+    
+    \vspace{8pt}
+    \begin{tabular}{@{}l@{\hspace{0.5em}}l}
+        \textcolor{accent}{\faEnvelope} & \href{mailto:msnakkhatra@gmail.com}{msnakkhatra@gmail.com} \\
+        \textcolor{accent}{\faPhone} & +8801833184707 \\
+        \textcolor{accent}{\faGithub} & \href{https://github.com/Nakkhatra}{github.com/Nakkhatra} \\
+        \textcolor{accent}{\faLinkedin} & \href{https://www.linkedin.com/in/nakkhatra/}{linkedin.com/in/nakkhatra} \\
+        \textcolor{accent}{\faGraduationCap} & \href{https://scholar.google.com/citations?user=nbixMUMAAAAJ}{Google Scholar Profile} \\
+        \textcolor{accent}{\faCode} & \href{https://huggingface.co/nakkhatra}{huggingface.co/nakkhatra}
+    \end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.32\textwidth}
+    \vspace{4.8cm}
+\end{minipage}
+
+\vspace{0.3cm}
+
+%-----------PROFESSIONAL SUMMARY-----------------
+\sectionTitle{\faLightbulb}{PROFESSIONAL SUMMARY}
+\vspace{-2pt}
+\begin{itemize}[leftmargin=0.15in, label={}]
+  \item\small{Machine Learning Engineer with 5+ years of experience building and deploying end-to-end ML systems, managing data pipelines, and leading AI initiatives. Proven track record in customer analytics, computer vision, and NLP. Seeking tech leadership roles to drive innovation and build high-performing teams.}
+\end{itemize}
+\vspace{-8pt}
+
+%-----------EDUCATION-----------------
+\sectionTitle{\faGraduationCap}{EDUCATION}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Bangladesh University of Engineering and Technology (BUET)}{Dhaka, Bangladesh}
+      {Bachelor of Science in Mechanical Engineering}{July 2014 - April 2019}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+\sectionTitle{\faBriefcase}{PROFESSIONAL EXPERIENCE}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+      {\href{https://www.robi.com.bd/en}{Robi Axiata Limited}}{Dhaka, Bangladesh}
+      {Associate Manager, AI \& Data Science}{October 2024 - Present}
+      \resumeItemListStart
+        \resumeItem{Developed social media sentiment analysis tool tracking sentiment, intent, emotion, and issues from Facebook comments from Robi, Airtel, Banglalink, and Grameenphone Facebook pages - Built live tableau dashboard presenting insights}
+        \resumeItem{Created automated SLT KPI monitoring app with database versioning, file-based KPI calculations, UI filtering, and monthly email reporting for senior leadership (Band A-C)}
+        \resumeItem{Engineered My Robi app inactive user profiling system to segment dormant users and deliver personalized re-engagement offers based on usage patterns}
+        \resumeItem{Built RAG-based procurement chatbot using financial documents (policies, LOAs, procedures) with vector embeddings for accurate context retrieval and query responses}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {\href{https://www.optimizely.com/}{Optimizely}}{Remote (US/UK)}
+      {Machine Learning Data Engineer - Level 2}{June 2022 - September 2024}
+      \resumeItemListStart
+        \resumeItem{Built end-to-end customer churn prediction system using time series analysis on product usage data, addressing class imbalance and data quality challenges}
+        \resumeItem{Architected automated ML pipeline on AWS with monthly retraining, model selection, and deployment using Docker, Kubernetes (Kustomize), and Argo Workflows}
+        \resumeItem{Implemented CI/CD pipeline via GitHub Actions and managed three-tier data architecture (RAW/STAGING/REPORTING) in Snowflake with DBT transformations}
+        \resumeItem{Integrated LIME for model explainability and delivered actionable insights to stakeholders through automated reporting dashboard}
+      \resumeItemListEnd
+
+    \newpage
+    
+    \resumeSubheading
+      {\href{https://nybsys.com/}{NybSys}}{Dhaka, Bangladesh}
+      {Machine Learning Engineer}{October 2021 - May 2022}
+      \resumeItemListStart
+        \resumeItem{Enhanced multi-model surveillance platform (Survello) with anomaly detection, loitering, object counting, mask detection, and motion tracking using multiprocessing}
+        \resumeItem{Developed real-time drowsiness detection system using facial landmarks and eye aspect ratio analysis with alert mechanisms}
+        \resumeItem{Led end-to-end development of smartphone-based fall detection app including data collection, synthetic data generation, and on-device ML model deployment}
+        \resumeItem{Maintained and migrated NybFace IoT-based face recognition API to edge devices for improved latency and offline capability}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {\href{https://www.averydennison.com/}{Avery Dennison}}{Dhaka, Bangladesh}
+      {Global Product Development Officer}{March 2020 - September 2021}
+      \resumeItemListStart
+        \resumeItem{Managed product lifecycle from quotation to production setup in Oracle database, collaborating with supply chain for material sourcing and product re-engineering}
+      \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+%-----------RESEARCH & PROJECTS-----------------
+\sectionTitle{\faFlask}{RESEARCH \& NOTABLE PROJECTS}
+  \resumeSubHeadingListStart
+    \resumeSubItem{Bengali CommonVoice Dataset}
+      {Co-led creation of largest open-source Bengali speech dataset included in Mozilla CommonVoice (CC0 license). Published research paper with EDA analysis and organized DL-Sprint Kaggle competition. \textit{Tech: Wav2vec2 XLS-R, Kaldi, Nemo} ~|~ \href{https://arxiv.org/abs/2206.14053}{Paper} ~|~ \href{https://huggingface.co/datasets/bengaliAI/CommonVoiceBangla}{Dataset}}
+    \resumeSubItem{Vehicle Detection \& Tracking System (Omdena - Remote)}
+      {Built 9-class vehicle detection and tracking system with relative velocity measurement for Bangladesh roads using YOLO v4 and DeepSORT. Developed custom vehicle detection model for Bangladesh-specific vehicles (CNG, rickshaws) with real-time estimation from dashboard camera footage. Solution deployed by partner company (sigmind.ai) for BGMEA in Export Processing Zone. \textit{July 2021 - August 2021} ~|~ \href{https://github.com/Nakkhatra/omdena-bangladesh-roadsafety}{GitHub} ~|~ \href{https://www.linkedin.com/posts/nakkhatra_this-is-the-outcome-of-the-computer-vision-activity-6832700348898140161-pQcP}{Demo Video}}
+  \resumeSubHeadingListEnd
+
+%-----------TECHNICAL SKILLS-----------------
+\sectionTitle{\faCode}{TECHNICAL SKILLS}
+ \resumeSubHeadingListStart
+   \resumeSubItem{Languages}{Python, MATLAB, C, C++, Bash, SQL}
+   \resumeSubItem{ML/DL Frameworks}{PyTorch, TensorFlow, Keras}
+   \resumeSubItem{MLOps \& Cloud}{Docker, Kubernetes, GitHub CI/CD, AWS (EC2, SageMaker), Snowflake, DBT}
+   \resumeSubItem{Data Science}{Pandas, PySpark}
+   \resumeSubItem{Visualization}{Matplotlib, Plotly, Seaborn, Bokeh}
+   \resumeSubItem{Version control}{Git}
+   \resumeSubItem{API}{Flask}
+ \resumeSubHeadingListEnd
+
+%-----------COURSES & CERTIFICATIONS-----------------
+\sectionTitle{\faCertificate}{COURSES \& CERTIFICATIONS}
+  \small{\textit{Certificates available at: \href{https://github.com/Nakkhatra/Certifications}{github.com/Nakkhatra/Certifications}}}
+  \resumeSubHeadingListStart
+    \resumeSubItem{Machine Learning}{Stanford University (Coursera) - Foundations, algorithms, and mathematics}
+    \resumeSubItem{Deep Learning Specialization}{Stanford University (Coursera) - Neural networks, hyperparameter tuning, optimization}
+  \resumeSubHeadingListEnd
+
+\end{document}

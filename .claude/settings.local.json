@@ -18,7 +18,8 @@
       "Bash(npm run lint*)",
       "Bash(npm run format*)",
       "Bash(npx prettier*)",
-      "Bash(npx eslint*)"
+      "Bash(npx eslint*)",
+      "Bash(npm run *)"
     ],
     "deny": [
       "Bash(git push --force*)",

@@ -1,0 +1,180 @@
+---
+title: "Spectrum Data Research Pipeline: Multi-Source News Aggregation & Claude Analysis"
+description: "How I engineered a production pipeline that autonomously discovers, fetches, and contextualizes regulatory and competitive news — handling 60+ countries, 200+ search terms, and daily enrichment via Claude AI."
+date: "2026-07-14"
+tags: ["Claude AI", "AWS Bedrock", "Python", "Research", "Data Engineering", "News Aggregation", "LLM"]
+published: true
+---
+
+## The Problem
+
+A large organization needed daily intelligence on regulatory and market developments across 60+ countries and dozens of topics. Manual research was impossible at that scale. They needed:
+
+- Automated discovery of news from regulatory bodies, trade press, and news aggregators
+- Consistent structuring and contextualization of findings
+- Ability to surface the most relevant stories (not just raw search results)
+- Scalable ingestion from multiple search providers
+- Preservation of source credibility and publication dates
+
+The ask: build a research pipeline that runs autonomously, fetches content at scale, and enriches it with AI-driven contextual analysis.
+
+---
+
+## What the Pipeline Does
+
+At a high level:
+
+1. **Search phase** — Issues 200+ parameterized searches across multiple countries and topics, using a configurable search provider (Perplexity, SerpAPI, Tavily)
+2. **Fetch phase** — Downloads URLs in parallel, extracts and ranks content by relevance using BM25, caches PDFs locally
+3. **Enrichment phase** — Proactively fetches known regulatory sources (regulator websites, government portals, operator newsrooms) and injects them as high-signal results
+4. **Claude analysis** — Sends ranked search results to Claude, which extracts and structures findings with rule-based tiering (primary/secondary/low-relevance)
+5. **Report generation** — Formats findings as markdown and CSV, groups by country and topic, and hierarchies entries by source tier
+6. **Backup & resume** — Saves search results and Claude progress to enable fast re-runs and mid-pipeline restarts
+
+All steps are orchestrated end-to-end with automatic retry logic, token counting, and error tracking.
+
+---
+
+## Tech Stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Language | Python 3.12 | Strong async support and ML/data libraries |
+| LLM | Claude Sonnet via AWS Bedrock | Structured XML output, handles long documents, cost-effective |
+| Search | Perplexity / SerpAPI / Tavily (pluggable) | Different providers for resilience; SerpAPI for news, Perplexity for depth |
+| Fetcher | requests + ThreadPoolExecutor | Parallel URL fetching with connection pooling |
+| Ranking | rank-bm25 | Fast, efficient relevance ranking with configurable keyword weights |
+| PDF extraction | pdfplumber + pypdf | Text and table extraction with fallback strategies |
+| Data | pandas + CSV | Lightweight, no DB overhead |
+| Config | TOML + .env | Hierarchical config with secret isolation |
+| Packaging | uv | Fast lockfile-based dependency resolution |
+| Backup | pickle + JSON | Dual-format saves for fast resume + human debugging |
+
+---
+
+## The Journey
+
+### Stage 1 — Search at Scale
+
+The naive approach — one API call per search term — works for 10 terms but breaks at 200+. I implemented:
+
+- **Fan-out with rate limiting** — Spread searches across multiple countries/topics, but respect API rate limits via `delay_between_searches`
+- **Provider abstraction** — Abstract interface so Perplexity, SerpAPI, and Tavily are swappable without changing orchestrator
+- **Automatic fallback** — If a search returns < MIN_RESULTS, try fallback queries (e.g., "SMP regulation" → "market dominance" → "competition")
+- **Backup between stages** — Save search results after every N searches. On restart, skip completed searches and resume from checkpoint
+
+Early runs hit rate limits. Solution: read the API tier from config and auto-adjust `max_search_calls` to stay within daily limits.
+
+### Stage 2 — Parallel Fetching with Smart Caching
+
+Fetching 200+ search results sequentially took hours. Parallelization was critical but risky (concurrent downloads can hammer servers and get blocked).
+
+I built a thread pool fetcher with:
+
+- **URL deduplication** — Hash-based cache across all search items; if URL is already fetched, reuse it
+- **Configurable concurrency** — ThreadPoolExecutor workers tuned per environment (8 for local, adaptive for cloud)
+- **Content extraction** — HTML via BeautifulSoup, PDFs via pdfplumber with fallback to pypdf
+- **PDF caching** — Hash-based local cache with compression, prevents re-fetching across re-runs
+- **Timeout & retry** — Fetch timeout configurable; max retries with backoff
+
+One gotcha: PDFs with corrupted metadata crashed pypdf. Added quality flags that feed into downstream Claude analysis (`has_corrupted_pdf`, `oversized`, etc.).
+
+### Stage 3 — BM25 Ranking
+
+Search results include snippets but not full content. Full content is fetched, but which parts matter most?
+
+I implemented per-URL BM25 ranking:
+
+- **3-tier keyword scoring** — Primary keywords (high weight), secondary (medium), tertiary (low)
+- **Topic-aware queries** — Keywords come from config, tuned per search topic
+- **Boost patterns** — Regex patterns (currency, regulator names) add extra signal
+- **Top-N pages** — Rank all extracted pages from a URL and return top 3, reducing noise
+
+This meant Claude sees the most relevant 3 pages from each URL, not raw search results.
+
+### Stage 4 — Proactive Regulatory Fetch
+
+Search results are useful but biased toward news aggregators. Regulators and operator newsrooms are official sources but often rank lower in search.
+
+I added proactive fetching:
+
+- **Source mapping** — Config lists known regulatory/operator websites + their country scope
+- **Topic matching** — Match search topics to sources (e.g., "SMP regulations" → TRAI, PTA, BTRC)
+- **Injection** — Proactively fetch matched sources and inject them as high-signal results
+- **Index expansion** — For list-page URLs (e.g., `/pages/notices`), expand to per-article links to maximize coverage
+
+This ensures official sources always get a fair look, even if news aggregators dominate search results.
+
+### Stage 5 — Claude Extraction with Tiering Rules
+
+Raw search results → Claude extraction requires clear rules. I built a rule-based extraction schema:
+
+**Relevance hierarchy:**
+- PRIMARY — Spectrum auctions, operator licensing, regulator enforcement (always CONFIRMED if in date range)
+- SECONDARY — Broadband policy, cybersecurity rules (CONFIRMED only if mobile operator named)
+- LOW RELEVANCE — Fixed ISP licensing, admin notices (always MIGHT_BE_IMPORTANT)
+
+**Date handling:**
+- CONFIRMED — Event within the reporting period
+- CONTEXT — Event before period but had in-period consequences
+- MIGHT_BE_IMPORTANT — Unclear date or indirect relevance
+- BORDERLINE — Source URL is generic index with no article slug
+
+Claude receives this as XML in the prompt, then outputs structured entries with tier, date, country, and citations.
+
+### Stage 6 — Report Hierarchies
+
+Raw Claude output is a flat list of 500+ entries. Stakeholders needed structure.
+
+I built three-level hierarchies:
+
+1. **Country** → group by geographic scope (e.g., India, EU)
+2. **Topic/Bucket** → group by category (e.g., SMP, spectrum, M&A)
+3. **Source Tier** → order by credibility (regulatory first, then news, then trade press)
+
+Within each tier, entries are deduplicated (same URL + headline = one entry) and sorted by date (newest first).
+
+### Stage 7 — Resume & Restart
+
+Full runs took 4-6 hours. Failures (API timeout, malformed PDF, Claude error) meant restarting from scratch.
+
+I implemented two-level checkpoints:
+
+- **Search backup** — After every 5 searches, save SearchItem objects (pickle + JSON). On restart, load and skip completed items.
+- **Claude progress** — After every 5 Claude calls, save processed_ids and results. On restart, skip finished searches and resume.
+
+A failed run at 80% completion can resume in 20 minutes instead of 4 hours.
+
+### The Path Parameter Bug
+
+The config loader used `Path("config.toml").parent` to find the project root, then constructed the `.env` path as `parent / ".env"`. When `config.toml` was relative, `.parent` returned `.` (current dir), not the project root. This caused `.env` to be looked up in the wrong directory, breaking AWS Bedrock auth.
+
+Fix: use `Path(config_path).resolve().parent` to convert relative paths to absolute before extracting the parent.
+
+---
+
+## Deployment & Operations
+
+The pipeline runs on-demand and nightly:
+
+- **On-demand** — Triggered by stakeholder requests for rapid re-runs or topic updates
+- **Nightly** — Cron job pulls latest news, updates the report, and emails stakeholders
+- **Configuration** — TOML + .env, with validation before any API calls
+
+Key metrics tracked:
+- Search success rate (% returning > MIN_RESULTS)
+- Fetch efficiency (% URLs returning content vs. timeout/404)
+- Claude token usage (input/output per country)
+- Extraction yield (# entries per country)
+
+---
+
+## What I'd Do Differently
+
+**Streaming extraction.** Claude calls are batched right now. True streaming responses with `stream=True` would show progress and enable early stop-on-quota.
+
+**Provider auto-selection.** Right now the provider is configured upfront. A smarter system would auto-select based on topic (news topics → SerpAPI, research → Perplexity) or fallback on provider failure.
+
+**Distributed fetching.** ThreadPoolExecutor is single-machine. For 10,000+ URLs, distributed workers (Lambda, task queue) would be faster and cleaner.
+
+**Real-time indexing.** Search results are re-fetched daily. Incremental indexing (only new URLs) would reduce bandwidth and accelerate re-runs.

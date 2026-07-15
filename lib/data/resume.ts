@@ -29,7 +29,7 @@ export interface ResumeData {
 
 export const resumeData: ResumeData = {
   summary:
-    "Machine Learning Engineer with 5+ years of experience building and deploying end-to-end ML systems, managing data pipelines, and leading AI initiatives. Proven track record in customer analytics, computer vision, and NLP. Seeking tech leadership roles to drive innovation and build high-performing teams.",
+    "Machine Learning Engineer with 6+ years of experience building and deploying end-to-end ML systems, managing data pipelines, and leading AI initiatives. Proven track record in customer analytics, computer vision, and NLP. Seeking tech leadership roles to drive innovation and build high-performing teams.",
   experience: [
     {
       title: "Associate Manager, AI & Data Science",
@@ -37,10 +37,13 @@ export const resumeData: ResumeData = {
       location: "Dhaka, Bangladesh",
       period: "October 2024 — Present",
       bullets: [
-        "Developed social media sentiment analysis tool tracking sentiment, intent, emotion, and issues from Facebook comments from Robi, Airtel, Banglalink, and Grameenphone Facebook pages - Built live tableau dashboard presenting insights",
-        "Created automated SLT KPI monitoring app with database versioning, file-based KPI calculations, UI filtering, and monthly email reporting for senior leadership (Band A-C)",
+        "Built autonomous research pipeline that discovers, fetches, and extracts news across 60+ countries using multi-source search (SerpAPI, Perplexity, Tavily) with BM25 ranking and Claude AI-driven contextualization — enabling daily intelligence on market developments",
+        "Engineered regulatory news extraction system with rule-based tiering, multi-bucket AI classification, and hierarchical reporting (country → topic → source tier) — processing 800+ daily entries with emoji-highlighted source credibility",
+        "Developed travel expense claim validation pipeline using Claude AI for receipt OCR, policy enforcement, and location plausibility checks — deployed nightly on production VM with resume checkpoints",
         "Engineered My Robi app inactive user profiling system to segment dormant users and deliver personalized re-engagement offers based on usage patterns",
         "Built RAG-based procurement chatbot using financial documents (policies, LOAs, procedures) with vector embeddings for accurate context retrieval and query responses",
+        "Created automated SLT KPI monitoring app with database versioning, file-based KPI calculations, UI filtering, and monthly email reporting for senior leadership (Band A-C)",
+        "Developed social media sentiment analysis tool tracking sentiment, intent, emotion, and issues from Facebook comments — built live Tableau dashboard presenting insights",
       ],
     },
     {
