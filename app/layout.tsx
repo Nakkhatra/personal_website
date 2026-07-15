@@ -7,6 +7,8 @@ import ScrollProgressBar from "@/components/ui/ScrollProgressBar";
 import CursorGlow from "@/components/ui/CursorGlow";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import FilmGrain from "@/components/ui/FilmGrain";
+import ThemePlayground from "@/components/ui/ThemePlayground";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { activeTheme, buildCssVars } from "@/lib/theme";
 import "./globals.css";
 
@@ -65,15 +67,18 @@ export default function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: buildCssVars(activeTheme) }} />
       </head>
       <body className="flex flex-col min-h-screen relative">
-        <BackgroundEffects />
-        <FilmGrain />
-        <ScrollProgressBar />
-        <CursorGlow />
-        <SmoothScrollProvider>
-          <Navbar />
-          <main className="flex-1 relative z-10">{children}</main>
-          <Footer />
-        </SmoothScrollProvider>
+        <ThemeProvider>
+          <BackgroundEffects />
+          <FilmGrain />
+          <ScrollProgressBar />
+          <CursorGlow />
+          <SmoothScrollProvider>
+            <Navbar />
+            <main className="flex-1 relative z-10">{children}</main>
+            <Footer />
+          </SmoothScrollProvider>
+          <ThemePlayground />
+        </ThemeProvider>
       </body>
     </html>
   );
