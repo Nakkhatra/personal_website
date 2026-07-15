@@ -24,9 +24,10 @@ const featuredProjects = [
   {
     name: "RAG-Based Procurement Chatbot",
     description:
-      "Built RAG chatbot using financial documents with vector embeddings for accurate context retrieval and query responses on procurement policies and procedures.",
+      "Built RAG chatbot using financial documents with hybrid vector-BM25 retrieval, context-aware reranking, and multi-turn conversational memory. Supports Claude and Ollama backends.",
     company: "Robi Axiata",
-    topics: ["RAG", "LLM", "Vector Search"],
+    topics: ["RAG", "LLM", "Vector Search", "FAISS", "Claude AI"],
+    blogUrl: "/blogs/rag-procurement-chatbot",
   },
   {
     name: "Customer Churn Prediction System",

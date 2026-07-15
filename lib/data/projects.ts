@@ -32,17 +32,18 @@ export const customProjects: CustomProject[] = [
     topics: ["Claude AI", "AWS Bedrock", "Python", "Docker", "SQLite"],
     blogUrl: "/blogs/travel-claim-validation-pipeline",
   },
+  {
+    name: "RAG-Based Procurement Chatbot",
+    description:
+      "Built RAG chatbot using financial documents with hybrid vector-BM25 retrieval, context-aware reranking, and multi-turn conversational memory. Supports Claude (AWS Bedrock) and Ollama backends with real-time document indexing and glossary-based abbreviation expansion.",
+    company: "Robi Axiata",
+    topics: ["RAG", "LLM", "Vector Search", "FAISS", "Claude AI"],
+    blogUrl: "/blogs/rag-procurement-chatbot",
+  },
 ];
 
 // Professional work without blog posts
 export const otherProfessionalProjects: CustomProject[] = [
-  {
-    name: "RAG-Based Procurement Chatbot",
-    description:
-      "Built RAG chatbot using financial documents with vector embeddings for accurate context retrieval and query responses on procurement policies and procedures.",
-    company: "Robi Axiata",
-    topics: ["RAG", "LLM", "Vector Search"],
-  },
   {
     name: "Customer Churn Prediction System",
     description:

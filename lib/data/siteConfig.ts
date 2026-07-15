@@ -16,7 +16,6 @@ export const siteConfig = {
   githubUsername: "Nakkhatra",
   projectWhitelist: [
     "claude_code",
-    "personal_website",
     "ubuntu_customization",
     "sentiment_analysis",
     "video-compressor-ffmpeg",
