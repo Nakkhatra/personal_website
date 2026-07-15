@@ -16,7 +16,7 @@ export const artworks: Artwork[] = [
     src: "/art/1_witcher_digital.png",
     title: "Geralt of Rivia",
     medium: "Digital",
-    year: 2024,
+    year: 2020,
     timeSpent: "~20 hours",
     description:
       "A digital painting inspired by Geralt of Rivia from The Witcher 3. I focused on capturing his resilience through dramatic lighting, atmospheric effects, and textured brushwork while balancing realism with a painterly style.",
@@ -27,7 +27,7 @@ export const artworks: Artwork[] = [
     src: "/art/2_Heisenberg_graphiteandpen.png",
     title: "Heisenberg",
     medium: "Graphite & Pen",
-    year: 2023,
+    year: 2019,
     description:
       "A graphite and pen portrait of Walter White from Breaking Bad, paired with his iconic 'I am the one who knocks' quote. The piece emphasizes strong contrasts, facial detail, and expressive line work.",
     instagramUrl: "https://www.instagram.com/p/B_FJ5kBH6O5/",
@@ -37,7 +37,7 @@ export const artworks: Artwork[] = [
     src: "/art/3_fightclub_digital.png",
     title: "Tyler Durden - Fight Club",
     medium: "Digital",
-    year: 2023,
+    year: 2020,
     timeSpent: "~12 hours",
     description:
       "A stylized digital portrait of Tyler Durden inspired by Fight Club. Bold colors, textured brush strokes, and expressive lighting were used to reflect the film's rebellious and chaotic energy.",
@@ -69,7 +69,7 @@ export const artworks: Artwork[] = [
     src: "/art/6_rooftopview_acrylic.png",
     title: "My Rooftop View",
     medium: "Acrylic",
-    year: 2024,
+    year: 2022,
     description:
       "An acrylic painting capturing the everyday view from my rooftop. The composition focuses on light, perspective, and subtle color transitions to transform a familiar scene into a quiet moment of reflection.",
     instagramUrl: "https://www.instagram.com/p/Cfo6oGfBp6n/",
