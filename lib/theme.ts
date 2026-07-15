@@ -315,7 +315,7 @@ export const themes = {
   forestObservatory,
 } as const;
 
-export const activeTheme: Theme = themes.midnightObservatory;
+export const activeTheme: Theme = themes.nordicFrost;
 
 // ─── CSS variable generation ──────────────────────────────────────────────────
 
