@@ -13,7 +13,15 @@ export default async function ProjectsPage() {
   const githubProjects = await getFilteredProjects();
 
   return (
-    <section className="py-20">
+    <section className="relative py-20">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 900px 600px at 50% 10%, rgba(var(--accent-rgb), 0.04) 0%, transparent 70%)",
+          zIndex: 0,
+        }}
+      />
       <Container>
         <div className="mb-12">
           <h1 className="text-4xl font-bold tracking-tight">Projects</h1>

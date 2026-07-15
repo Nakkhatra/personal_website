@@ -10,7 +10,15 @@ export const metadata = {
 
 export default function ArtPage() {
   return (
-    <section className="py-20">
+    <section className="relative py-20">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 900px 600px at 50% 10%, rgba(var(--accent-rgb), 0.04) 0%, transparent 70%)",
+          zIndex: 0,
+        }}
+      />
       <Container>
         {/* Hero */}
         <FadeIn className="mb-14 max-w-2xl">

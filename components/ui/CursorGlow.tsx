@@ -2,9 +2,12 @@
 
 import { useEffect } from "react";
 import { motion, useMotionValue, useSpring, useReducedMotion } from "framer-motion";
+import { useTheme } from "@/components/providers/ThemeProvider";
+import { hexToRgb } from "@/lib/theme";
 
 export default function CursorGlow() {
   const shouldReduce = useReducedMotion();
+  const { theme } = useTheme();
   const mouseX = useMotionValue(-300);
   const mouseY = useMotionValue(-300);
   const springX = useSpring(mouseX, { stiffness: 80, damping: 25 });
@@ -22,14 +25,15 @@ export default function CursorGlow() {
 
   if (shouldReduce) return null;
 
+  const accentRgbStr = hexToRgb(theme.colors.accent.primary);
+
   return (
     <motion.div
       className="fixed top-0 left-0 w-[300px] h-[300px] rounded-full pointer-events-none z-0 [@media(pointer:coarse)]:hidden"
       style={{
         x: springX,
         y: springY,
-        background:
-          "radial-gradient(circle, rgba(var(--accent-rgb), 0.10) 0%, transparent 70%)",
+        background: `radial-gradient(circle, rgba(${accentRgbStr}, 0.10) 0%, transparent 70%)`,
       }}
       aria-hidden
     />

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Mail } from "lucide-react";
 import { siteConfig } from "@/lib/data/siteConfig";
-import { activeTheme } from "@/lib/theme";
+import { activeTheme, hexToRgb } from "@/lib/theme";
 import Container from "./Container";
 
 function FooterStars() {
@@ -39,7 +39,7 @@ function FooterStars() {
         if (s.opacity < 0.1 || s.opacity > 0.7) s.delta *= -1;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${activeTheme.effects.starColorRgb},${s.opacity})`;
+        ctx.fillStyle = `rgba(${hexToRgb(activeTheme.colors.text.primary)},${s.opacity})`;
         ctx.fill();
       }
       rafId = requestAnimationFrame(draw);
