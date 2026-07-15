@@ -1,9 +1,26 @@
+import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Container from "@/components/layout/Container";
 
 const featuredProjects = [
+  {
+    name: "Regulatory News Extraction Pipeline",
+    description:
+      "Autonomous regulatory intelligence system that searches, fetches, and extracts news across 60+ countries with AI-powered topic classification (25 categories), hierarchical reporting, and emoji-highlighted source credibility.",
+    company: "Robi Axiata",
+    topics: ["Claude AI", "NLP", "Data Engineering"],
+    blogUrl: "/blogs/regulatory-news-pipeline",
+  },
+  {
+    name: "Travel Claim Validation Pipeline",
+    description:
+      "Automated end-to-end pipeline that validates employee travel expense claims using Claude Sonnet for PDF receipt extraction, fuzzy name/amount matching, policy-based cap enforcement, and location plausibility checks.",
+    company: "Professional",
+    topics: ["Claude AI", "AWS Bedrock", "Python", "Docker"],
+    blogUrl: "/blogs/travel-claim-validation-pipeline",
+  },
   {
     name: "RAG-Based Procurement Chatbot",
     description:
@@ -32,27 +49,6 @@ const featuredProjects = [
     company: "NybSys",
     topics: ["Computer Vision", "Real-time Processing"],
   },
-  {
-    name: "Fall Detection App",
-    description:
-      "Led end-to-end development of smartphone-based fall detection including data collection, synthetic data generation, and on-device ML model deployment.",
-    company: "NybSys",
-    topics: ["Mobile ML", "Edge Computing"],
-  },
-  {
-    name: "My Robi User Profiling System",
-    description:
-      "Engineered inactive user profiling system to segment dormant users and deliver personalized re-engagement offers based on usage patterns.",
-    company: "Robi Axiata",
-    topics: ["ML", "Customer Analytics"],
-  },
-  {
-    name: "Travel Claim Validation Pipeline",
-    description:
-      "Automated end-to-end pipeline that validates employee travel expense claims using Claude Sonnet (AWS Bedrock) for PDF receipt extraction, fuzzy name/amount matching, policy-based cap enforcement, and subscriber location plausibility checks. Containerised with Docker and deployed on an Ubuntu VM with a nightly cron schedule.",
-    company: "Professional",
-    topics: ["Claude AI", "AWS Bedrock", "Python", "Docker", "SFTP", "SQLite", "rapidfuzz"],
-  },
 ];
 
 export default function FeaturedProjects() {
@@ -65,18 +61,30 @@ export default function FeaturedProjects() {
         />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {featuredProjects.map((project) => (
-            <Card key={project.name}>
-              <h3 className="font-heading font-semibold text-lg text-text-primary mb-2">
-                {project.name}
-              </h3>
-              <p className="text-xs text-accent mb-3">{project.company}</p>
-              <p className="text-text-secondary text-sm leading-relaxed mb-4">
-                {project.description}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {project.topics.map((topic) => (
-                  <Badge key={topic}>{topic}</Badge>
-                ))}
+            <Card key={project.name} className="flex flex-col h-full">
+              <div className="flex-1">
+                <h3 className="font-heading font-semibold text-lg text-text-primary mb-2">
+                  {project.name}
+                </h3>
+                <p className="text-xs text-accent mb-3">{project.company}</p>
+                <p className="text-text-secondary text-sm leading-relaxed mb-4">
+                  {project.description}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {project.topics.map((topic) => (
+                    <Badge key={topic}>{topic}</Badge>
+                  ))}
+                </div>
+                {project.blogUrl && (
+                  <Link
+                    href={project.blogUrl}
+                    className="inline-block text-sm font-medium text-accent hover:text-accent-hover transition-colors"
+                  >
+                    Read full journey →
+                  </Link>
+                )}
               </div>
             </Card>
           ))}
