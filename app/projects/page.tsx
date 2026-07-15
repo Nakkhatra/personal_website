@@ -1,5 +1,5 @@
 import { getFilteredProjects } from "@/lib/github";
-import { customProjects } from "@/lib/data/projects";
+import { customProjects, otherProfessionalProjects } from "@/lib/data/projects";
 import ProjectCard from "@/components/projects/ProjectCard";
 import CustomProjectCard from "@/components/projects/CustomProjectCard";
 import Container from "@/components/layout/Container";
@@ -22,14 +22,28 @@ export default async function ProjectsPage() {
           </p>
         </div>
 
-        {/* Professional Projects */}
+        {/* Featured Professional Projects (with blog links) */}
         {customProjects.length > 0 && (
           <div className="mb-16">
             <h2 className="text-2xl font-bold tracking-tight mb-6">
-              Professional Projects
+              Featured Projects (with detailed write-ups)
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {customProjects.map((project) => (
+                <CustomProjectCard key={project.name} project={project} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Other Professional Projects */}
+        {otherProfessionalProjects.length > 0 && (
+          <div className="mb-16">
+            <h2 className="text-2xl font-bold tracking-tight mb-6">
+              Professional Work
+            </h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {otherProfessionalProjects.map((project) => (
                 <CustomProjectCard key={project.name} project={project} />
               ))}
             </div>

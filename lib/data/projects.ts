@@ -6,6 +6,7 @@ export interface CustomProject {
   blogUrl?: string;
 }
 
+// Projects with blog posts
 export const customProjects: CustomProject[] = [
   {
     name: "Spectrum Data Research Pipeline",
@@ -30,5 +31,51 @@ export const customProjects: CustomProject[] = [
     company: "Professional",
     topics: ["Claude AI", "AWS Bedrock", "Python", "Docker", "SQLite"],
     blogUrl: "/blogs/travel-claim-validation-pipeline",
+  },
+];
+
+// Professional work without blog posts
+export const otherProfessionalProjects: CustomProject[] = [
+  {
+    name: "RAG-Based Procurement Chatbot",
+    description:
+      "Built RAG chatbot using financial documents with vector embeddings for accurate context retrieval and query responses on procurement policies and procedures.",
+    company: "Robi Axiata",
+    topics: ["RAG", "LLM", "Vector Search"],
+  },
+  {
+    name: "Customer Churn Prediction System",
+    description:
+      "End-to-end ML system with automated pipeline on AWS, monthly retraining, model selection, and deployment using Docker, Kubernetes, and Argo Workflows.",
+    company: "Optimizely",
+    topics: ["ML", "AWS", "Kubernetes"],
+  },
+  {
+    name: "Social Media Sentiment Analysis",
+    description:
+      "Developed tool tracking sentiment, intent, emotion, and issues from Facebook comments across major telecom providers with live Tableau dashboard.",
+    company: "Robi Axiata",
+    topics: ["NLP", "Sentiment Analysis", "Tableau"],
+  },
+  {
+    name: "Survello Surveillance Platform",
+    description:
+      "Enhanced multi-model platform with anomaly detection, loitering, object counting, mask detection, and motion tracking using multiprocessing.",
+    company: "NybSys",
+    topics: ["Computer Vision", "Real-time Processing"],
+  },
+  {
+    name: "Fall Detection App",
+    description:
+      "Led end-to-end development of smartphone-based fall detection including data collection, synthetic data generation, and on-device ML model deployment.",
+    company: "NybSys",
+    topics: ["Mobile ML", "Edge Computing"],
+  },
+  {
+    name: "My Robi User Profiling System",
+    description:
+      "Engineered inactive user profiling system to segment dormant users and deliver personalized re-engagement offers based on usage patterns.",
+    company: "Robi Axiata",
+    topics: ["ML", "Customer Analytics"],
   },
 ];

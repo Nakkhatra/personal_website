@@ -19,21 +19,19 @@ export default function CustomProjectCard({ project }: CustomProjectCardProps) {
           {project.description}
         </p>
       </div>
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          {project.topics.map((topic) => (
-            <Badge key={topic}>{topic}</Badge>
-          ))}
-        </div>
-        {project.blogUrl && (
-          <Link
-            href={project.blogUrl}
-            className="inline-block text-sm font-medium text-accent hover:text-accent-hover transition-colors"
-          >
-            Read full journey →
-          </Link>
-        )}
+      <div className="flex flex-wrap gap-2">
+        {project.topics.map((topic) => (
+          <Badge key={topic}>{topic}</Badge>
+        ))}
       </div>
+      {project.blogUrl && (
+        <Link
+          href={project.blogUrl}
+          className="mt-4 inline-block text-sm font-medium text-accent hover:text-accent-hover transition-colors"
+        >
+          Read full journey →
+        </Link>
+      )}
     </Card>
   );
 }
