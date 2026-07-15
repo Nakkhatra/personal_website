@@ -2,6 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Animation keyframes ─────────────────────────────────────── */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.20; }
+  50%       { opacity: 0.40; }
+}
+
+@keyframes blob-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, -20px) scale(1.05); }
+  66%       { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes blob-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-25px, 20px) scale(1.05); }
+  66%       { transform: translate(15px, -15px) scale(0.95); }
+}
+
+@keyframes blob-drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(20px, 25px) scale(1.03); }
+}
+
+@keyframes contact-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 135, 90, 0); }
+  50%       { box-shadow: 0 0 14px 4px rgba(200, 135, 90, 0.28); }
+}
+
+@keyframes shine {
+  0%   { left: -75%; }
+  100% { left: 125%; }
+}
+
+/* ── Animation utility classes ───────────────────────────────── */
+
+.animate-float {
+  animation: float 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 7s ease-in-out infinite;
+}
+
+.animate-contact-glow {
+  animation: contact-glow 8s ease-in-out infinite;
+}
+
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+.btn-shine:hover::before {
+  animation: shine 0.6s ease forwards;
+}
+
+/* ── Reduced motion safety net (CSS-only animations) ─────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   :root {
     --background: #0B1D26;
