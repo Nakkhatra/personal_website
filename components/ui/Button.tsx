@@ -75,10 +75,10 @@ export default function Button({
     whileHover: shouldReduce
       ? {}
       : {
-          y: -3,
+          y: -2,
           scale: 1.02,
           boxShadow: isPrimary
-            ? "0 8px 25px rgba(200,135,90,0.30)"
+            ? "0 8px 25px rgba(var(--accent-rgb), 0.30)"
             : "0 6px 20px rgba(0,0,0,0.20)",
         },
     whileTap: shouldReduce ? {} : { scale: 0.97 },

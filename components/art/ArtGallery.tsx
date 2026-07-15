@@ -62,7 +62,7 @@ function ArtCard({
               y: -6,
               scale: 1.02,
               boxShadow:
-                "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(200,135,90,0.25)",
+                "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(var(--accent-rgb), 0.25)",
             }
       }
       transition={{ type: "spring", stiffness: 300, damping: 28 }}

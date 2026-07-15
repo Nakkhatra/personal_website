@@ -11,6 +11,7 @@ import Image from "next/image";
 import { siteConfig } from "@/lib/data/siteConfig";
 import Button from "@/components/ui/Button";
 import Container from "@/components/layout/Container";
+import ConstellationOverlay from "@/components/ui/ConstellationOverlay";
 
 function GitHubIcon({ size = 18 }: { size?: number }) {
   return (
@@ -78,8 +79,8 @@ export default function Hero() {
   function handleMouseMove(e: React.MouseEvent<HTMLElement>) {
     if (shouldReduce) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    mouseX.set(((e.clientX - rect.left - rect.width / 2) / rect.width) * 6);
-    mouseY.set(((e.clientY - rect.top - rect.height / 2) / rect.height) * 6);
+    mouseX.set(((e.clientX - rect.left - rect.width / 2) / rect.width) * 12);
+    mouseY.set(((e.clientY - rect.top - rect.height / 2) / rect.height) * 12);
   }
 
   function handleMouseLeave() {
@@ -89,10 +90,12 @@ export default function Hero() {
 
   return (
     <section
-      className="py-24 sm:py-32"
+      className="relative py-24 sm:py-32"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
+      <ConstellationOverlay />
+      <div className="relative z-[2]">
       <Container>
         <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
           {/* Text content */}
@@ -140,7 +143,7 @@ export default function Hero() {
                       : {
                           y: -4,
                           rotate: 5,
-                          filter: "drop-shadow(0 0 6px rgba(200,135,90,0.6))",
+                          filter: "drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.6))",
                         }
                   }
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -200,6 +203,7 @@ export default function Hero() {
           </motion.div>
         </div>
       </Container>
+      </div>
     </section>
   );
 }

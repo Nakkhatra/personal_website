@@ -7,15 +7,32 @@ import About from "@/components/home/About";
 import Contact from "@/components/home/Contact";
 import FadeIn from "@/components/ui/FadeIn";
 
+const sectionGlow = (
+  <div
+    className="absolute inset-0 pointer-events-none"
+    style={{
+      background:
+        "radial-gradient(ellipse 800px 500px at 50% 30%, rgba(var(--accent-rgb), 0.04) 0%, transparent 70%)",
+      zIndex: 0,
+    }}
+  />
+);
+
 export default function Home() {
   return (
     <>
       <Hero />
       <FadeIn>
-        <FeaturedProjects />
+        <div className="relative">
+          {sectionGlow}
+          <FeaturedProjects />
+        </div>
       </FadeIn>
       <FadeIn>
-        <Publications />
+        <div className="relative">
+          {sectionGlow}
+          <Publications />
+        </div>
       </FadeIn>
       <FadeIn>
         <BlogPreview />
