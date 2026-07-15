@@ -44,23 +44,23 @@ export default function AnimatedProjectCard({ project }: { project: Project }) {
       className="flex flex-col h-full rounded-xl bg-surface border border-border p-6 cursor-default"
       style={
         shouldReduce
-          ? { boxShadow: "0 0 0 0 rgba(200,135,90,0)" }
+          ? { boxShadow: "0 0 0 0 rgba(var(--accent-rgb), 0)" }
           : {
               rotateX: springRotateX,
               rotateY: springRotateY,
               transformPerspective: 800,
               willChange: "transform",
-              boxShadow: "0 0 0 0 rgba(200,135,90,0)",
+              boxShadow: "0 0 0 0 rgba(var(--accent-rgb), 0)",
             }
       }
       whileHover={
         shouldReduce
           ? {}
           : {
-              y: -10,
-              scale: 1.02,
+              y: -8,
+              scale: 1.015,
               boxShadow:
-                "0 20px 40px rgba(200,135,90,0.15), 0 0 0 1px rgba(200,135,90,0.20)",
+                "0 20px 40px rgba(var(--accent-rgb), 0.15), 0 0 0 1px rgba(var(--accent-rgb), 0.20)",
             }
       }
       transition={{ type: "spring", stiffness: 300, damping: 25 }}

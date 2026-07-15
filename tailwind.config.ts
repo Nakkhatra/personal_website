@@ -9,19 +9,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#0B1D26",
+        background: "rgb(var(--bg-base-ch) / <alpha-value>)",
         surface: {
-          DEFAULT: "#112B38",
-          hover: "#153545",
+          DEFAULT: "var(--bg-surface)",
+          hover: "var(--bg-surface-hover)",
         },
-        border: "#1A3A4A",
-        "text-primary": "#EDEDED",
-        "text-secondary": "#94A3B8",
-        "text-muted": "#64748B",
+        border: "var(--border)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
         accent: {
-          DEFAULT: "#C8875A",
-          hover: "#D4956B",
-          muted: "rgba(200, 135, 90, 0.125)",
+          DEFAULT: "rgb(var(--accent-ch) / <alpha-value>)",
+          hover: "var(--accent-hover)",
+          muted: "var(--accent-muted)",
         },
       },
       fontFamily: {

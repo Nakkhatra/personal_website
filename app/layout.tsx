@@ -6,6 +6,8 @@ import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
 import ScrollProgressBar from "@/components/ui/ScrollProgressBar";
 import CursorGlow from "@/components/ui/CursorGlow";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
+import FilmGrain from "@/components/ui/FilmGrain";
+import { activeTheme, buildCssVars } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({
@@ -59,8 +61,12 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${sora.variable} ${jetbrains.variable}`}
     >
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: buildCssVars(activeTheme) }} />
+      </head>
       <body className="flex flex-col min-h-screen relative">
         <BackgroundEffects />
+        <FilmGrain />
         <ScrollProgressBar />
         <CursorGlow />
         <SmoothScrollProvider>

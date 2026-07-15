@@ -18,7 +18,7 @@ export default function ScrollProgressBar() {
       className="fixed top-0 left-0 right-0 z-[60] h-[2px] origin-left pointer-events-none"
       style={{
         scaleX,
-        background: "linear-gradient(to right, #C8875A, #D4956B)",
+        background: "linear-gradient(to right, var(--accent), var(--accent-hover))",
       }}
     />
   );

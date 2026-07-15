@@ -22,13 +22,13 @@ export default function Navbar() {
   const shouldReduce = useReducedMotion();
   const { scrollY } = useScroll();
 
-  const blurNum = useTransform(scrollY, [0, 80], [12, 20]);
+  const blurNum = useTransform(scrollY, [0, 80], [8, 28]);
   const backdropBlur = useTransform(blurNum, (v) => `blur(${v}px)`);
   const navPaddingY = useTransform(scrollY, [0, 80], [16, 8]);
 
   return (
     <motion.header
-      className="sticky top-0 z-50 bg-background/80 border-b border-border"
+      className="sticky top-0 z-50 bg-background/60 border-b border-border"
       style={{
         backdropFilter: shouldReduce ? "blur(12px)" : backdropBlur,
       }}

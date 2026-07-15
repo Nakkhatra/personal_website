@@ -32,8 +32,8 @@
 }
 
 @keyframes contact-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 135, 90, 0); }
-  50%       { box-shadow: 0 0 14px 4px rgba(200, 135, 90, 0.28); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0); }
+  50%       { box-shadow: 0 0 14px 4px rgba(var(--accent-rgb), 0.28); }
 }
 
 @keyframes shine {
@@ -44,7 +44,7 @@
 /* ── Animation utility classes ───────────────────────────────── */
 
 .animate-float {
-  animation: float 7s ease-in-out infinite;
+  animation: float 8s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -93,19 +93,6 @@
 }
 
 @layer base {
-  :root {
-    --background: #0B1D26;
-    --surface: #112B38;
-    --surface-hover: #153545;
-    --border: #1A3A4A;
-    --text-primary: #EDEDED;
-    --text-secondary: #94A3B8;
-    --text-muted: #64748B;
-    --accent: #C8875A;
-    --accent-hover: #D4956B;
-    --accent-muted: rgba(200, 135, 90, 0.125);
-  }
-
   body {
     @apply bg-background text-text-secondary font-body antialiased;
   }
