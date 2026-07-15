@@ -4,18 +4,44 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+} from "framer-motion";
 import { siteConfig } from "@/lib/data/siteConfig";
 import Container from "./Container";
+
+const MotionLink = motion.create(Link);
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const shouldReduce = useReducedMotion();
+  const { scrollY } = useScroll();
+
+  const blurNum = useTransform(scrollY, [0, 80], [12, 20]);
+  const backdropBlur = useTransform(blurNum, (v) => `blur(${v}px)`);
+  const navPaddingY = useTransform(scrollY, [0, 80], [16, 8]);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <motion.header
+      className="sticky top-0 z-50 bg-background/80 border-b border-border"
+      style={{
+        backdropFilter: shouldReduce ? "blur(12px)" : backdropBlur,
+      }}
+    >
       <Container>
-        <nav className="flex items-center justify-between h-16">
+        <motion.nav
+          className="flex items-center justify-between"
+          style={
+            shouldReduce
+              ? { paddingTop: 16, paddingBottom: 16 }
+              : { paddingTop: navPaddingY, paddingBottom: navPaddingY }
+          }
+        >
           {/* Logo */}
           <Link
             href="/"
@@ -33,9 +59,11 @@ export default function Navbar() {
                   : pathname.startsWith(link.href);
 
               return (
-                <Link
+                <MotionLink
                   key={link.href}
                   href={link.href}
+                  whileHover={shouldReduce ? {} : { y: -2 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className={`relative px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                     isActive
                       ? "text-accent"
@@ -50,7 +78,7 @@ export default function Navbar() {
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
-                </Link>
+                </MotionLink>
               );
             })}
           </div>
@@ -59,7 +87,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <a
               href={`mailto:${siteConfig.email}`}
-              className="hidden md:inline-flex px-5 py-2 text-sm font-medium rounded-full bg-accent text-background hover:bg-accent-hover transition-colors"
+              className="hidden md:inline-flex px-5 py-2 text-sm font-medium rounded-full bg-accent text-background hover:bg-accent-hover transition-colors animate-contact-glow"
             >
               Contact Me
             </a>
@@ -71,7 +99,7 @@ export default function Navbar() {
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
-        </nav>
+        </motion.nav>
       </Container>
 
       {/* Mobile drawer */}
@@ -130,6 +158,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 }

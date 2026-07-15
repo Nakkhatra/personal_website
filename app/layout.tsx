@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Inter, Sora, JetBrains_Mono } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
+import ScrollProgressBar from "@/components/ui/ScrollProgressBar";
+import CursorGlow from "@/components/ui/CursorGlow";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import "./globals.css";
 
 const inter = Inter({
@@ -55,10 +59,15 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${sora.variable} ${jetbrains.variable}`}
     >
-      <body className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body className="flex flex-col min-h-screen relative">
+        <BackgroundEffects />
+        <ScrollProgressBar />
+        <CursorGlow />
+        <SmoothScrollProvider>
+          <Navbar />
+          <main className="flex-1 relative z-10">{children}</main>
+          <Footer />
+        </SmoothScrollProvider>
       </body>
     </html>
   );

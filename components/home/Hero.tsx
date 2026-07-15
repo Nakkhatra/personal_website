@@ -1,7 +1,12 @@
 "use client";
 
 import { Mail } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useReducedMotion,
+} from "framer-motion";
 import Image from "next/image";
 import { siteConfig } from "@/lib/data/siteConfig";
 import Button from "@/components/ui/Button";
@@ -43,22 +48,55 @@ const stagger = {
   show: { transition: { staggerChildren: 0.12 } },
 };
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
+const iconStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
 };
 
 export default function Hero() {
+  const shouldReduce = useReducedMotion();
+
+  const fadeUp = {
+    hidden: shouldReduce
+      ? { opacity: 0 }
+      : { opacity: 0, y: 30, filter: "blur(8px)" },
+    show: shouldReduce
+      ? { opacity: 1, transition: { duration: 0.01 } }
+      : {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+          transition: { duration: 0.5, ease: "easeOut" as const },
+        },
+  };
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const portraitX = useSpring(mouseX, { stiffness: 150, damping: 25 });
+  const portraitY = useSpring(mouseY, { stiffness: 150, damping: 25 });
+
+  function handleMouseMove(e: React.MouseEvent<HTMLElement>) {
+    if (shouldReduce) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(((e.clientX - rect.left - rect.width / 2) / rect.width) * 6);
+    mouseY.set(((e.clientY - rect.top - rect.height / 2) / rect.height) * 6);
+  }
+
+  function handleMouseLeave() {
+    mouseX.set(0);
+    mouseY.set(0);
+  }
+
   return (
-    <section className="py-24 sm:py-32">
+    <section
+      className="py-24 sm:py-32"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       <Container>
         <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
           {/* Text content */}
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-          >
+          <motion.div variants={stagger} initial="hidden" animate="show">
             <motion.p variants={fadeUp} className="text-accent font-medium mb-4">
               Hey, I&apos;m
             </motion.p>
@@ -76,29 +114,50 @@ export default function Hero() {
             </motion.p>
             <motion.p
               variants={fadeUp}
+              transition={{ delay: 0.12 }}
               className="mt-6 text-text-secondary leading-relaxed max-w-2xl"
             >
               {siteConfig.bio}
             </motion.p>
 
-            {/* Social icons */}
-            <motion.div variants={fadeUp} className="flex items-center gap-4 mt-6">
+            {/* Social icons — individually staggered */}
+            <motion.div
+              variants={iconStagger}
+              initial="hidden"
+              animate="show"
+              className="flex items-center gap-4 mt-6"
+            >
               {socialIcons.map((link) => (
-                <a
+                <motion.a
                   key={link.label}
                   href={link.href}
                   target={link.label !== "Email" ? "_blank" : undefined}
                   rel={link.label !== "Email" ? "noopener noreferrer" : undefined}
+                  variants={fadeUp}
+                  whileHover={
+                    shouldReduce
+                      ? {}
+                      : {
+                          y: -4,
+                          rotate: 5,
+                          filter: "drop-shadow(0 0 6px rgba(200,135,90,0.6))",
+                        }
+                  }
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   className="text-text-muted hover:text-accent transition-colors"
                   aria-label={link.label}
                 >
                   <link.icon size={20} />
-                </a>
+                </motion.a>
               ))}
             </motion.div>
 
             {/* CTA buttons */}
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-4 mt-8">
+            <motion.div
+              variants={fadeUp}
+              transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
+              className="flex flex-wrap gap-4 mt-8"
+            >
               <Button href="/projects">View Projects</Button>
               <Button href="/blogs" variant="secondary">
                 Read Blog
@@ -106,16 +165,27 @@ export default function Hero() {
             </motion.div>
           </motion.div>
 
-          {/* Portrait */}
+          {/* Portrait — parallax outer, float + glow-pulse inner */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
+            style={shouldReduce ? {} : { x: portraitX, y: portraitY }}
             className="relative mx-auto lg:mx-0 order-first lg:order-last"
           >
-            <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80">
-              {/* Accent border ring */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-accent to-accent-hover opacity-20 blur-2xl" />
+            <div
+              className={`relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80${
+                shouldReduce ? "" : " animate-float"
+              }`}
+              style={{ willChange: "transform" }}
+            >
+              {/* Breathing glow ring */}
+              <div
+                className={`absolute inset-0 rounded-full bg-gradient-to-br from-accent to-accent-hover opacity-20 blur-2xl${
+                  shouldReduce ? "" : " animate-glow-pulse"
+                }`}
+              />
+              {/* Portrait */}
               <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-accent shadow-2xl shadow-accent/20">
                 <Image
                   src="/portrait.jpg"

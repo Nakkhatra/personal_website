@@ -1,6 +1,61 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { Mail } from "lucide-react";
 import { siteConfig } from "@/lib/data/siteConfig";
 import Container from "./Container";
+
+function FooterStars() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = canvas.offsetWidth || window.innerWidth;
+    canvas.height = canvas.offsetHeight || 80;
+
+    const stars = Array.from({ length: 30 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 0.8 + 0.2,
+      opacity: Math.random() * 0.5 + 0.2,
+      delta: (Math.random() * 0.002 + 0.001) * (Math.random() > 0.5 ? 1 : -1),
+    }));
+
+    let rafId: number;
+
+    function draw() {
+      if (!canvas || !ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const s of stars) {
+        s.opacity += s.delta;
+        if (s.opacity < 0.1 || s.opacity > 0.7) s.delta *= -1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(237,237,237,${s.opacity})`;
+        ctx.fill();
+      }
+      rafId = requestAnimationFrame(draw);
+    }
+
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none opacity-30"
+      aria-hidden
+    />
+  );
+}
 
 function GitHubIcon({ size = 18 }: { size?: number }) {
   return (
@@ -26,7 +81,8 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border py-8">
+    <footer className="border-t border-border py-8 relative overflow-hidden">
+      <FooterStars />
       <Container>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-text-muted text-sm">

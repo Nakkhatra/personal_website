@@ -1,6 +1,7 @@
-import Link from "next/link";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
+"use client";
+
+import { motion, useReducedMotion } from "framer-motion";
+import AnimatedProjectCard from "@/components/home/AnimatedProjectCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Container from "@/components/layout/Container";
 
@@ -52,7 +53,19 @@ const featuredProjects = [
   },
 ];
 
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
+};
+
 export default function FeaturedProjects() {
+  const shouldReduce = useReducedMotion();
+
   return (
     <section className="py-20">
       <Container>
@@ -60,36 +73,22 @@ export default function FeaturedProjects() {
           title="Featured Projects"
           subtitle="Major projects from professional work"
         />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <motion.div
+          className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+          variants={shouldReduce ? {} : containerVariants}
+          initial={shouldReduce ? false : "hidden"}
+          whileInView={shouldReduce ? undefined : "show"}
+          viewport={{ once: true, margin: "-80px" }}
+        >
           {featuredProjects.map((project) => (
-            <Card key={project.name} className="flex flex-col h-full">
-              <div className="flex-1">
-                <h3 className="font-heading font-semibold text-lg text-text-primary mb-2">
-                  {project.name}
-                </h3>
-                <p className="text-xs text-accent mb-3">{project.company}</p>
-                <p className="text-text-secondary text-sm leading-relaxed mb-4">
-                  {project.description}
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {project.topics.map((topic) => (
-                    <Badge key={topic}>{topic}</Badge>
-                  ))}
-                </div>
-                {project.blogUrl && (
-                  <Link
-                    href={project.blogUrl}
-                    className="inline-block text-sm font-medium text-accent hover:text-accent-hover transition-colors"
-                  >
-                    Read full journey →
-                  </Link>
-                )}
-              </div>
-            </Card>
+            <motion.div
+              key={project.name}
+              variants={shouldReduce ? {} : cardVariants}
+            >
+              <AnimatedProjectCard project={project} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </Container>
     </section>
   );
