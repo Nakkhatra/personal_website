@@ -66,7 +66,7 @@ export interface Theme {
 
 // ─── Themes ───────────────────────────────────────────────────────────────────
 
-const midnightObservatory: Theme = {
+const midnight: Theme = {
   colors: {
     background: {
       base: "#07141E",
@@ -106,7 +106,7 @@ const midnightObservatory: Theme = {
   },
 };
 
-const emeraldAurora: Theme = {
+const aurora: Theme = {
   colors: {
     background: {
       base: "#0A1A20",
@@ -146,7 +146,7 @@ const emeraldAurora: Theme = {
   },
 };
 
-const royalAmethyst: Theme = {
+const amethyst: Theme = {
   colors: {
     background: {
       base: "#120D1E",
@@ -186,7 +186,7 @@ const royalAmethyst: Theme = {
   },
 };
 
-const crimsonEclipse: Theme = {
+const crimson: Theme = {
   colors: {
     background: {
       base: "#141414",
@@ -226,7 +226,7 @@ const crimsonEclipse: Theme = {
   },
 };
 
-const nordicFrost: Theme = {
+const nordic: Theme = {
   colors: {
     background: {
       base: "#08131C",
@@ -266,7 +266,7 @@ const nordicFrost: Theme = {
   },
 };
 
-const forestObservatory: Theme = {
+const forest: Theme = {
   colors: {
     background: {
       base: "#08140C",
@@ -307,15 +307,15 @@ const forestObservatory: Theme = {
 };
 
 export const themes = {
-  midnightObservatory,
-  emeraldAurora,
-  royalAmethyst,
-  crimsonEclipse,
-  nordicFrost,
-  forestObservatory,
+  midnight,
+  aurora,
+  amethyst,
+  crimson,
+  nordic,
+  forest,
 } as const;
 
-export const activeTheme: Theme = themes.nordicFrost;
+export const activeTheme: Theme = themes.nordic;
 
 // ─── CSS variable generation ──────────────────────────────────────────────────
 

@@ -8,12 +8,12 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 type ThemeName = keyof typeof themes;
 
 const THEME_META: Record<ThemeName, { label: string; swatch: string }> = {
-  midnightObservatory: { label: "Midnight Observatory", swatch: "#CFA06F" },
-  emeraldAurora: { label: "Emerald Aurora", swatch: "#2DD4BF" },
-  royalAmethyst: { label: "Royal Amethyst", swatch: "#9B72CF" },
-  crimsonEclipse: { label: "Crimson Eclipse", swatch: "#C04A4A" },
-  nordicFrost: { label: "Nordic Frost", swatch: "#8ABFD8" },
-  forestObservatory: { label: "Forest Observatory", swatch: "#C9A55A" },
+  midnight: { label: "Midnight", swatch: "#CFA06F" },
+  aurora: { label: "Aurora", swatch: "#2DD4BF" },
+  amethyst: { label: "Amethyst", swatch: "#9B72CF" },
+  crimson: { label: "Crimson", swatch: "#C04A4A" },
+  nordic: { label: "Nordic", swatch: "#8ABFD8" },
+  forest: { label: "Forest", swatch: "#C9A55A" },
 };
 
 function PaletteIcon({ size = 16 }: { size?: number }) {
