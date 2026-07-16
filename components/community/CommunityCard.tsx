@@ -71,6 +71,7 @@ export default function CommunityCard({
                 alt={`${post.title} — image ${i + 1}`}
                 fill
                 loading="lazy"
+                unoptimized
                 className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
@@ -84,6 +85,7 @@ export default function CommunityCard({
             alt={post.title}
             fill
             loading="lazy"
+            unoptimized
             className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
