@@ -64,11 +64,11 @@ export default function Hero() {
     show: shouldReduce
       ? { opacity: 1, transition: { duration: 0.01 } }
       : {
-          opacity: 1,
-          y: 0,
-          filter: "blur(0px)",
-          transition: { duration: 0.5, ease: "easeOut" as const },
-        },
+        opacity: 1,
+        y: 0,
+        filter: "blur(0px)",
+        transition: { duration: 0.5, ease: "easeOut" as const },
+      },
   };
 
   const mouseX = useMotionValue(0);
@@ -96,113 +96,111 @@ export default function Hero() {
     >
       <ConstellationOverlay />
       <div className="relative z-[2]">
-      <Container>
-        <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
-          {/* Text content */}
-          <motion.div variants={stagger} initial="hidden" animate="show">
-            <motion.p variants={fadeUp} className="text-accent font-medium mb-4">
-              Hey, I&apos;m
-            </motion.p>
-            <motion.h1
-              variants={fadeUp}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight font-heading text-text-primary"
-            >
-              {siteConfig.shortName}
-            </motion.h1>
-            <motion.p
-              variants={fadeUp}
-              className="mt-4 text-xl sm:text-2xl text-text-secondary"
-            >
-              {siteConfig.role}
-            </motion.p>
-            <motion.p
-              variants={fadeUp}
-              transition={{ delay: 0.12 }}
-              className="mt-6 text-text-secondary leading-relaxed max-w-2xl"
-            >
-              {siteConfig.bio}
-            </motion.p>
+        <Container>
+          <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
+            {/* Text content */}
+            <motion.div variants={stagger} initial="hidden" animate="show">
+              <motion.p variants={fadeUp} className="text-accent font-medium mb-4">
+                Hey, I&apos;m
+              </motion.p>
+              <motion.h1
+                variants={fadeUp}
+                className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight font-heading text-text-primary"
+              >
+                {siteConfig.shortName}
+              </motion.h1>
+              <motion.p
+                variants={fadeUp}
+                className="mt-4 text-xl sm:text-2xl text-text-secondary"
+              >
+                {siteConfig.role}
+              </motion.p>
+              <motion.p
+                variants={fadeUp}
+                transition={{ delay: 0.12 }}
+                className="mt-6 text-text-secondary leading-relaxed max-w-2xl"
+              >
+                {siteConfig.bio}
+              </motion.p>
 
-            {/* Social icons — individually staggered */}
-            <motion.div
-              variants={iconStagger}
-              initial="hidden"
-              animate="show"
-              className="flex items-center gap-4 mt-6"
-            >
-              {socialIcons.map((link) => (
-                <motion.a
-                  key={link.label}
-                  href={link.href}
-                  target={link.label !== "Email" ? "_blank" : undefined}
-                  rel={link.label !== "Email" ? "noopener noreferrer" : undefined}
-                  variants={fadeUp}
-                  whileHover={
-                    shouldReduce
-                      ? {}
-                      : {
+              {/* Social icons — individually staggered */}
+              <motion.div
+                variants={iconStagger}
+                initial="hidden"
+                animate="show"
+                className="flex items-center gap-4 mt-6"
+              >
+                {socialIcons.map((link) => (
+                  <motion.a
+                    key={link.label}
+                    href={link.href}
+                    target={link.label !== "Email" ? "_blank" : undefined}
+                    rel={link.label !== "Email" ? "noopener noreferrer" : undefined}
+                    variants={fadeUp}
+                    whileHover={
+                      shouldReduce
+                        ? {}
+                        : {
                           y: -4,
                           rotate: 5,
                           filter: "drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.6))",
                         }
-                  }
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className="text-text-muted hover:text-accent transition-colors"
-                  aria-label={link.label}
-                >
-                  <link.icon size={20} />
-                </motion.a>
-              ))}
+                    }
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    className="text-text-muted hover:text-accent transition-colors"
+                    aria-label={link.label}
+                  >
+                    <link.icon size={20} />
+                  </motion.a>
+                ))}
+              </motion.div>
+
+              {/* CTA buttons */}
+              <motion.div
+                variants={fadeUp}
+                transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
+                className="flex flex-wrap gap-4 mt-8"
+              >
+                <Button href="/projects">View Projects</Button>
+                <Button href="/blogs" variant="secondary">
+                  Read Blog
+                </Button>
+              </motion.div>
             </motion.div>
 
-            {/* CTA buttons */}
+            {/* Portrait — parallax outer, float + glow-pulse inner */}
             <motion.div
-              variants={fadeUp}
-              transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
-              className="flex flex-wrap gap-4 mt-8"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              style={shouldReduce ? {} : { x: portraitX, y: portraitY }}
+              className="relative mx-auto lg:mx-0 order-first lg:order-last"
             >
-              <Button href="/projects">View Projects</Button>
-              <Button href="/blogs" variant="secondary">
-                Read Blog
-              </Button>
-            </motion.div>
-          </motion.div>
-
-          {/* Portrait — parallax outer, float + glow-pulse inner */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            style={shouldReduce ? {} : { x: portraitX, y: portraitY }}
-            className="relative mx-auto lg:mx-0 order-first lg:order-last"
-          >
-            <div
-              className={`relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80${
-                shouldReduce ? "" : " animate-float"
-              }`}
-              style={{ willChange: "transform" }}
-            >
-              {/* Breathing glow ring */}
               <div
-                className={`absolute inset-0 rounded-full bg-gradient-to-br from-accent to-accent-hover opacity-20 blur-2xl${
-                  shouldReduce ? "" : " animate-glow-pulse"
-                }`}
-              />
-              {/* Portrait */}
-              <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-accent shadow-2xl shadow-accent/20">
-                <Image
-                  src="/portrait.jpg"
-                  alt={siteConfig.shortName}
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="(max-width: 640px) 256px, (max-width: 1024px) 288px, 320px"
+                className={`relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80${shouldReduce ? "" : " animate-float"
+                  }`}
+                style={{ willChange: "transform" }}
+              >
+                {/* Breathing glow ring */}
+                <div
+                  className={`absolute inset-0 rounded-full bg-gradient-to-br from-accent to-accent-hover opacity-20 blur-2xl${shouldReduce ? "" : " animate-glow-pulse"
+                    }`}
                 />
+                {/* Portrait */}
+                <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-accent shadow-2xl shadow-accent/20">
+                  <Image
+                    src="/portrait_arcane.png"
+                    alt={siteConfig.shortName}
+                    fill
+                    className="object-cover object-top"
+                    priority
+                    sizes="(max-width: 640px) 256px, (max-width: 1024px) 288px, 320px"
+                  />
+                </div>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      </Container>
+            </motion.div>
+          </div>
+        </Container>
       </div>
     </section>
   );
