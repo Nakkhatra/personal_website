@@ -25,7 +25,17 @@
       "Bash(curl -s http://localhost:3000)",
       "Bash(python3 -c \"import sys; html=sys.stdin.read\\(\\); start=html.find\\('<style>:root'\\); end=html.find\\('</style>', start\\)+8; print\\(html[start:end]\\)\")",
       "Bash(grep -v \"^$\")",
-      "Bash(grep -rn \"rgba\\(\\\\|rgb\\(\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" components/ app/ --include=\"*.tsx\" --include=\"*.ts\" --include=\"*.css\")"
+      "Bash(grep -rn \"rgba\\(\\\\|rgb\\(\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" components/ app/ --include=\"*.tsx\" --include=\"*.ts\" --include=\"*.css\")",
+      "Bash(git push *)",
+      "Bash(mkdir -p /home/beast/work/personal_repos/personal_website/public/images/community)",
+      "Bash(mkdir -p /home/beast/work/personal_repos/personal_website/components/community)",
+      "Bash(convert --version)",
+      "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(python3 *)",
+      "Bash(cp ~/Downloads/post2_1.jpeg /home/beast/work/personal_repos/personal_website/public/images/community/post2_1.jpg)",
+      "Bash(cp ~/Downloads/post2_2.jpeg /home/beast/work/personal_repos/personal_website/public/images/community/post2_2.jpg)",
+      "Bash(cp ~/Downloads/post2_3.jpeg /home/beast/work/personal_repos/personal_website/public/images/community/post2_3.jpg)",
+      "Bash(rm /home/beast/work/personal_repos/personal_website/public/images/community/post2.jpg)"
     ],
     "deny": [
       "Bash(git push --force*)",
