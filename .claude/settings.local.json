@@ -35,7 +35,9 @@
       "Bash(cp ~/Downloads/post2_1.jpeg /home/beast/work/personal_repos/personal_website/public/images/community/post2_1.jpg)",
       "Bash(cp ~/Downloads/post2_2.jpeg /home/beast/work/personal_repos/personal_website/public/images/community/post2_2.jpg)",
       "Bash(cp ~/Downloads/post2_3.jpeg /home/beast/work/personal_repos/personal_website/public/images/community/post2_3.jpg)",
-      "Bash(rm /home/beast/work/personal_repos/personal_website/public/images/community/post2.jpg)"
+      "Bash(rm /home/beast/work/personal_repos/personal_website/public/images/community/post2.jpg)",
+      "Bash(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 /home/beast/work/personal_repos/personal_website/public/images/community/post1.mp4)",
+      "Bash(ffmpeg -ss 2 -i /home/beast/work/personal_repos/personal_website/public/images/community/post1.mp4 -frames:v 1 -q:v 2 /home/beast/work/personal_repos/personal_website/public/images/community/post1_thumb.jpg -y)"
     ],
     "deny": [
       "Bash(git push --force*)",

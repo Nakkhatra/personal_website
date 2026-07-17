@@ -22,8 +22,8 @@ export const communityPosts: CommunityPost[] = [
       "Developed a computer vision pipeline for the Omdena Bangladesh Chapter challenge using YOLOv4 for multi-class vehicle detection and DeepSORT for object tracking. The system detects 9 vehicle classes and visualizes relative vehicle velocity in real time (green for positive, red for negative motion). Despite limited time and an imbalanced dataset, the project demonstrated a strong proof of concept with scope for improved accuracy through future data collection and model refinement.",
     date: "Aug 2021",
     categories: ["AI", "Community"],
-    type: "video",
-    thumbnail: "/images/community/post1.mp4",
+    type: "image",
+    thumbnail: "/images/community/post1_thumb.jpg",
     linkedinUrl:
       "https://www.linkedin.com/feed/update/urn:li:activity:6832700348898140161/",
   },
