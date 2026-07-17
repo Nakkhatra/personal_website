@@ -45,11 +45,14 @@ export const communityPosts: CommunityPost[] = [
   {
     title: "Delivering Generative AI Training at Robi Axiata",
     description:
-      "Conducted a Generative AI training session for the Strategic Planning & EPM team at Robi Axiata, covering Large Language Models (LLMs), prompt engineering, AI reasoning, hallucinations, and practical AI applications in business. The session focused on helping participants understand how to effectively leverage AI tools for productivity, research, strategic decision-making, and responsible AI adoption as part of Robi's AI-native transformation.",
+      "Conducted two Generative AI training sessions for the Strategic Planning & EPM team at Robi Axiata, covering Large Language Models (LLMs), prompt engineering, AI reasoning, hallucinations, and practical AI applications in business. The session focused on helping participants understand how to effectively leverage AI tools for productivity, research, strategic decision-making, and responsible AI adoption as part of Robi's AI-native transformation.",
     date: "Feb 2025",
     categories: ["Speaking", "AI"],
     type: "image",
-    thumbnail: "/images/community/post3.jpg",
+    thumbnail: [
+      "/images/community/post3.jpg",
+      "/images/community/post3_2.jpg",
+    ],
     linkedinUrl:
       "https://www.linkedin.com/posts/nakkhatra_good-time-nice-to-be-a-part-of-the-ai-native-share-7469439950971908096-_fev/",
   },
