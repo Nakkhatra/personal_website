@@ -5,6 +5,8 @@ import Footer from "@/components/layout/Footer";
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
 import ScrollProgressBar from "@/components/ui/ScrollProgressBar";
 import CursorGlow from "@/components/ui/CursorGlow";
+import CustomCursor from "@/components/ui/CustomCursor";
+import Preloader from "@/components/ui/Preloader";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import FilmGrain from "@/components/ui/FilmGrain";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -67,10 +69,12 @@ export default function RootLayout({
       </head>
       <body className="flex flex-col min-h-screen relative">
         <ThemeProvider>
+          <Preloader />
           <BackgroundEffects />
           <FilmGrain />
           <ScrollProgressBar />
           <CursorGlow />
+          <CustomCursor />
           <SmoothScrollProvider>
             <Navbar />
             <main className="flex-1 relative z-10">{children}</main>

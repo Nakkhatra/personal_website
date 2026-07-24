@@ -13,7 +13,7 @@ import { themes, activeTheme, applyThemeVars, type Theme } from "@/lib/theme";
 type ThemeName = keyof typeof themes;
 
 const STORAGE_KEY = "preferred-theme";
-const DEFAULT_THEME: ThemeName = "nordic";
+const DEFAULT_THEME: ThemeName = "cinematic";
 
 function resolveInitialTheme(): ThemeName {
   if (typeof window === "undefined") return DEFAULT_THEME;

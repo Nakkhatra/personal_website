@@ -43,6 +43,10 @@ export interface Theme {
       secondary: string;
       glow: string;
     };
+    accent2: {
+      primary: string;
+      glow: string;
+    };
     border: {
       default: string;
       hover: string;
@@ -85,6 +89,10 @@ const midnight: Theme = {
       secondary: "#D4B080",
       glow: "#CFA06F",
     },
+    accent2: {
+      primary: "#C9A96E",
+      glow: "#C9A96E",
+    },
     border: {
       default: "#1A3A4A",
       hover: "#2A5A6A",
@@ -124,6 +132,10 @@ const aurora: Theme = {
       primary: "#2DD4BF",
       secondary: "#34D9C4",
       glow: "#2DD4BF",
+    },
+    accent2: {
+      primary: "#D4A84B",
+      glow: "#D4A84B",
     },
     border: {
       default: "#163545",
@@ -165,6 +177,10 @@ const amethyst: Theme = {
       secondary: "#A97FDC",
       glow: "#9B72CF",
     },
+    accent2: {
+      primary: "#C9956A",
+      glow: "#C9956A",
+    },
     border: {
       default: "#2A1F40",
       hover: "#4A356A",
@@ -204,6 +220,10 @@ const crimson: Theme = {
       primary: "#C04A4A",
       secondary: "#CC5555",
       glow: "#C04A4A",
+    },
+    accent2: {
+      primary: "#C9A050",
+      glow: "#C9A050",
     },
     border: {
       default: "#2A2A2A",
@@ -245,6 +265,10 @@ const nordic: Theme = {
       secondary: "#8FD4ED",
       glow: "#7EC8E3",
     },
+    accent2: {
+      primary: "#C9A96E",
+      glow: "#C9A96E",
+    },
     border: {
       default: "#1E3040",
       hover: "#2E5070",
@@ -285,6 +309,10 @@ const forest: Theme = {
       secondary: "#D4B45C",
       glow: "#C8A84B",
     },
+    accent2: {
+      primary: "#7EC8A0",
+      glow: "#7EC8A0",
+    },
     border: {
       default: "#1A3A22",
       hover: "#2A5A32",
@@ -306,7 +334,52 @@ const forest: Theme = {
   },
 };
 
+const cinematic: Theme = {
+  colors: {
+    background: {
+      base: "#050508",
+      elevated: "#0a0a0f",
+      surface: "#0f0f14",
+      surfaceHover: "#16161d",
+      card: "#0f0f14",
+    },
+    text: {
+      primary: "#f4f4f5",
+      secondary: "#a1a1aa",
+      muted: "#52525b",
+    },
+    accent: {
+      primary: "#7dd3fc",
+      secondary: "#93c5fd",
+      glow: "#7dd3fc",
+    },
+    accent2: {
+      primary: "#c9a96e",
+      glow: "#c9a96e",
+    },
+    border: {
+      default: "#141419",
+      hover: "#22222b",
+    },
+  },
+  shadows: {
+    soft: "0 4px 16px rgba(0,0,0,0.4)",
+    medium: "0 8px 25px rgba(0,0,0,0.55)",
+  },
+  effects: {
+    nebula1: "#7dd3fc",
+    nebula2: "#c9a96e",
+  },
+  motion: {
+    fast: "0.15s",
+    normal: "0.3s",
+    slow: "0.6s",
+    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+};
+
 export const themes = {
+  cinematic,
   midnight,
   aurora,
   amethyst,
@@ -315,7 +388,7 @@ export const themes = {
   forest,
 } as const;
 
-export const activeTheme: Theme = themes.nordic;
+export const activeTheme: Theme = themes.cinematic;
 
 // ─── CSS variable generation ──────────────────────────────────────────────────
 
@@ -323,6 +396,8 @@ function buildVarsRecord(theme: Theme): Record<string, string> {
   const { colors, effects } = theme;
   const accentRgbStr = hexToRgb(colors.accent.primary);
   const accentChStr = hexToChannels(colors.accent.primary);
+  const accent2RgbStr = hexToRgb(colors.accent2.primary);
+  const accent2ChStr = hexToChannels(colors.accent2.primary);
   const bgBaseChStr = hexToChannels(colors.background.base);
   const starColStr = hexToRgb(colors.text.primary);
 
@@ -343,6 +418,10 @@ function buildVarsRecord(theme: Theme): Record<string, string> {
     "--accent-rgb": accentRgbStr,
     "--accent-hover": colors.accent.secondary,
     "--accent-muted": `rgba(${accentRgbStr}, 0.125)`,
+    "--accent-2": colors.accent2.primary,
+    "--accent-2-ch": accent2ChStr,
+    "--accent-2-rgb": accent2RgbStr,
+    "--accent-2-muted": `rgba(${accent2RgbStr}, 0.125)`,
     "--nebula1": effects.nebula1,
     "--nebula2": effects.nebula2,
     "--star-color": starColStr,

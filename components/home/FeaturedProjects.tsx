@@ -74,20 +74,25 @@ export default function FeaturedProjects() {
           subtitle="Major projects from professional work"
         />
         <motion.div
-          className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-6 grid-cols-1 md:grid-cols-6"
           variants={shouldReduce ? {} : containerVariants}
           initial={shouldReduce ? false : "hidden"}
           whileInView={shouldReduce ? undefined : "show"}
           viewport={{ once: true, margin: "-80px" }}
         >
-          {featuredProjects.map((project) => (
-            <motion.div
-              key={project.name}
-              variants={shouldReduce ? {} : cardVariants}
-            >
-              <AnimatedProjectCard project={project} />
-            </motion.div>
-          ))}
+          {featuredProjects.map((project, i) => {
+            const featured = i === 0 || i === 3;
+            const colSpan = featured ? "md:col-span-4" : "md:col-span-2";
+            return (
+              <motion.div
+                key={project.name}
+                variants={shouldReduce ? {} : cardVariants}
+                className={`col-span-1 ${colSpan}`}
+              >
+                <AnimatedProjectCard project={project} featured={featured} />
+              </motion.div>
+            );
+          })}
         </motion.div>
       </Container>
     </section>

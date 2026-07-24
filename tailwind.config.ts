@@ -23,6 +23,10 @@ const config: Config = {
           hover: "var(--accent-hover)",
           muted: "var(--accent-muted)",
         },
+        accent2: {
+          DEFAULT: "rgb(var(--accent-2-ch) / <alpha-value>)",
+          muted: "var(--accent-2-muted)",
+        },
       },
       fontFamily: {
         heading: ["var(--font-sora)", "sans-serif"],

@@ -12,6 +12,7 @@ import { siteConfig } from "@/lib/data/siteConfig";
 import Button from "@/components/ui/Button";
 import Container from "@/components/layout/Container";
 import ConstellationOverlay from "@/components/ui/ConstellationOverlay";
+import HeroArtifacts from "@/components/ui/HeroArtifacts";
 
 function GitHubIcon({ size = 18 }: { size?: number }) {
   return (
@@ -95,6 +96,7 @@ export default function Hero() {
       onMouseLeave={handleMouseLeave}
     >
       <ConstellationOverlay />
+      <HeroArtifacts />
       <div className="relative z-[2]">
         <Container>
           <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
@@ -103,12 +105,36 @@ export default function Hero() {
               <motion.p variants={fadeUp} className="text-accent font-medium mb-4">
                 Hey, I&apos;m
               </motion.p>
-              <motion.h1
-                variants={fadeUp}
-                className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight font-heading text-text-primary"
-              >
-                {siteConfig.shortName}
-              </motion.h1>
+              {shouldReduce ? (
+                <motion.h1
+                  variants={fadeUp}
+                  className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight font-heading text-text-primary"
+                >
+                  {siteConfig.shortName}
+                </motion.h1>
+              ) : (
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight font-heading text-text-primary">
+                  <motion.span
+                    className="inline"
+                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03 } } }}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    {siteConfig.shortName.split("").map((ch, i) => (
+                      <motion.span
+                        key={i}
+                        className="inline-block"
+                        variants={{
+                          hidden: { opacity: 0, y: 20 },
+                          show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+                        }}
+                      >
+                        {ch === " " ? " " : ch}
+                      </motion.span>
+                    ))}
+                  </motion.span>
+                </h1>
+              )}
               <motion.p
                 variants={fadeUp}
                 className="mt-4 text-xl sm:text-2xl text-text-secondary"

@@ -8,6 +8,7 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 type ThemeName = keyof typeof themes;
 
 const THEME_META: Record<ThemeName, { label: string; swatch: string }> = {
+  cinematic: { label: "Cinematic", swatch: "#7dd3fc" },
   midnight: { label: "Midnight", swatch: "#CFA06F" },
   aurora: { label: "Aurora", swatch: "#2DD4BF" },
   amethyst: { label: "Amethyst", swatch: "#9B72CF" },
