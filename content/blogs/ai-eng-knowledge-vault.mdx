@@ -1,0 +1,227 @@
+---
+title: "Building a Personal AI Research Feed: Scraping LinkedIn, Scholar, and X into an Obsidian Vault"
+description: "How I built a local Python system that automatically pulls AI-engineering content from three sources, classifies it with Claude, and writes structured notes into Obsidian — with deduplication, date parsing, and a budget-aware research tracker."
+date: "2026-07-28"
+tags: ["Python", "Obsidian", "Claude AI", "AWS Bedrock", "Playwright", "SerpApi", "LLM", "Automation"]
+published: true
+---
+
+## The Problem
+
+I save a lot of things. LinkedIn posts about inference optimization, arXiv papers from researchers I follow, threads on X about new fine-tuning techniques. The problem is they go nowhere useful. LinkedIn's saved posts feature is a graveyard. Papers pile up in browser tabs. X threads disappear.
+
+What I actually wanted was a searchable, structured knowledge base that I could open in Obsidian and query: "What did people write about KV-cache optimization this month?" or "What papers has Tri Dao published recently?"
+
+The manual version of this takes more time than it saves. So I automated it.
+
+---
+
+## What the System Does
+
+Three scrapers, one vault:
+
+1. **LinkedIn saved posts** — scrapes my saved posts feed, sends each one to Claude for classification and a 3-sentence summary, writes a note into the matching category folder
+2. **Google Scholar via SerpApi** — queries Scholar for the latest papers per vault category and per researcher, merges results into `_Latest_Research_Papers.md` tables
+3. **X/Twitter + LinkedIn activity** — fetches recent posts from 26 AI researchers, batches them per person, asks Claude to summarize the week's themes, writes a `<Name>-2026-W31.md` note
+
+Everything lands in a single Obsidian vault with consistent YAML frontmatter. One command runs all three:
+
+```bash
+uv run python -m scraper.main --all
+```
+
+---
+
+## Tech Stack
+
+| Layer | Choice | Reason |
+|---|---|---|
+| Browser automation | Playwright + system Chrome | Real fingerprint, persistent profiles, no Selenium headaches |
+| LLM | Claude Sonnet via AWS Bedrock | Structured XML output, reliable |
+| Paper search | SerpApi google_scholar | 250 free searches/month, simple API |
+| Note format | Markdown + YAML frontmatter | Native Obsidian, Dataview-queryable |
+| Env management | uv | Fast, isolated, doesn't touch system Python |
+| Config | JSON | All CSS selectors live here — DOM rot becomes a config edit, not a code change |
+
+---
+
+## The Browser Auth Problem
+
+The thing that always kills scraping projects is authentication. Most approaches either store credentials in plaintext (bad) or automate the login flow (gets your account flagged within a week).
+
+I took a different approach: manual first-time login, then session persistence. The scraper opens a real Chrome window, waits for you to log in manually including 2FA, then saves the session. Every subsequent run reuses those cookies silently.
+
+The important detail is that Playwright uses a completely separate Chrome profile directory (`browser_profiles/linkedin/`, `browser_profiles/x/`), never touching your personal `~/.config/google-chrome`. Chrome's SingletonLock is per user-data-dir, so three Chrome instances can run simultaneously as long as each has a different directory. Your personal browsing is completely unaffected.
+
+```bash
+uv run python -m scraper.linkedin_scraper --auth   # one-time
+uv run python -m scraper.social_tracker --auth-x   # one-time
+```
+
+After that, `--all` runs headlessly until the session expires (typically 30-90 days).
+
+---
+
+## Taxonomy Without Drift
+
+The core challenge with LLM classification is consistency over time. Ask Claude to categorize a post about LoRA fine-tuning today and it might say `Fine-Tuning/LoRA`. Ask it again next month and it says `Parameter-Efficient-Fine-Tuning/Low-Rank-Adaptation`. Both are reasonable but they create two separate folders in your vault.
+
+I built three layers to fight this:
+
+**Layer 1: Prompt injection.** Before every classification call, `discover_categories()` walks the vault and returns the current category list. The prompt tells Claude to reuse these exact paths and only invent new ones under `AI-Engineering/Emerging-Research/<Topic>`.
+
+**Layer 2: Fuzzy snap.** After Claude responds, `snap_to_existing()` runs `difflib.SequenceMatcher` against all known categories. If the similarity is above 0.85, it snaps to the existing path. Catches `Low-Rank-Adapter` vs `Low-Rank-Adapters` style variants.
+
+**Layer 3: Semantic aliases.** Some synonyms aren't string-similar at all. `"LoRA"` and `"Low-Rank-Adapters"` have zero string overlap. A config dict maps these explicitly:
+
+```json
+"aliases": {
+  "LoRA": "Low-Rank-Adapters",
+  "vLLM": "Runtimes",
+  "PEFT": "Parameter-Efficient-Fine-Tuning",
+  "RAG": "Retrieval-Augmented-Generation"
+}
+```
+
+You add entries here when you notice drift. The threshold and alias list are both config values, not code.
+
+---
+
+## Deduplication
+
+Re-running the pipeline should never create duplicate notes. Each module handles this differently.
+
+**LinkedIn** uses the vault as the source of truth. On every run, it walks all `*.md` files, reads the frontmatter of each one, and builds a set of known `source_url` and `source_id` values. Any post already in the vault gets skipped before any LLM call is made. Deleting a note from Obsidian means it gets re-imported — which is intentional.
+
+The `source_id` is a SHA1 of `author + text[:200]`. LinkedIn saved-post cards often have no permalink in the DOM (the feed virtualizes), so the ID is the fallback. The actual URL comes from a `data-chameleon-result-urn` attribute on the card, which constructs to a `/feed/update/urn:li:activity:XXXXX/` permalink.
+
+**Scholar** uses idempotent table merging. Each `_Latest_Research_Papers.md` file is a markdown table keyed on paper URL. The merge function reads existing rows into a dict, checks each new row against it, and only appends genuinely unseen papers. Running the same query twice writes zero new rows.
+
+**Social** is simpler — output filenames are deterministic: `Yann LeCun-2026-W31.md`. Same-week re-run overwrites the same file. New week, new file.
+
+---
+
+## Date Sorting
+
+One thing that bugged me early: all my LinkedIn notes had `date_collected: 2026-07-27` because that's when I ran the scraper. But a post from 3 years ago should sort differently than one from yesterday.
+
+LinkedIn shows relative ages in the author block: `"6h •"`, `"3d •"`, `"1yr •"`. The text is part of the author DOM element along with their name, title, and connection degree. I wrote a regex that extracts the unit and count, then converts to an absolute date:
+
+```python
+_REL_AGE_RE = re.compile(r'(\d+)\s*(s|m|h|hr|d|w|wk|mo|yr)s?\b', re.IGNORECASE)
+
+def _parse_relative_date(author_blob: str, now: datetime) -> Optional[str]:
+    m = _REL_AGE_RE.search(author_blob)
+    if not m:
+        return None
+    n, unit = int(m.group(1)), m.group(2).lower()
+    mapping = {"h": timedelta(hours=n), "d": timedelta(days=n), "w": timedelta(weeks=n), ...}
+    return (now - mapping[unit]).strftime("%Y-%m-%d")
+```
+
+The `now` timestamp is captured once at the start of a scroll session so all relative ages in that run are consistent. Notes get a `date_posted` field that Dataview can sort on:
+
+```dataview
+TABLE date_posted, author, category
+FROM "AI-Engineering"
+WHERE source = "linkedin-saved" AND status = "🔴 Unread"
+SORT date_posted DESC
+```
+
+For scholar papers, SerpApi returns the publication year directly. I added a `Year` column to the tables and sort newest-first before writing.
+
+---
+
+## Budget Management for SerpApi
+
+The free SerpApi tier gives 250 searches per month. With 26 researchers plus however many vault categories, it's easy to burn through that without covering everything.
+
+The scholar tracker maintains a state file at `scraper/state/scholar_budget.json`:
+
+```json
+{"period": "2026-07", "used": 12, "cursors": {"category": 3, "researcher": 8}}
+```
+
+On each run it checks how many queries are left this month, then selects from the pool using round-robin cursors per kind. Categories get priority 1, researchers priority 3. The cursor position persists across months so if you only covered researchers 1-8 in July, August starts at researcher 9.
+
+The one correctness detail: the `used` counter is incremented and saved to disk **before** the HTTP call, not after. If the process crashes mid-run, the count might be off by 1 but it never over-spends. Under-counting by 1 on a crash is fine; over-spending is not.
+
+---
+
+## The Selector Rot Problem
+
+On the first live run, LinkedIn returned 0 posts. Classic selector rot — the DOM had changed.
+
+The original selectors assumed a feed-style layout with `div.occludable-update` containers and `data-urn` attributes. The actual saved posts page now uses a search-result-style layout with `div[data-chameleon-result-urn]` containers and `p.entity-result__content-summary` for text.
+
+The system dumps the full page DOM to `logs/linkedin_dom_<timestamp>.html` whenever extraction returns zero results. I grep'd the dump for `data-urn` (zero hits), then searched for attribute patterns and found `data-chameleon-result-urn` on 20 elements — exactly the 20 posts visible on screen.
+
+Fix was a one-line config change:
+
+```json
+"post_container": "div[data-chameleon-result-urn]",
+"post_text": "p.entity-result__content-summary",
+"post_urn_attr": "data-chameleon-result-urn"
+```
+
+No code deployed. Because all selectors live in `config.json`, selector rot is a config edit, not a release. The DOM dump on zero-extraction makes the diagnosis fast — you have the exact HTML that the scraper saw, not a guess.
+
+---
+
+## LLM Output Parsing
+
+Asking an LLM to return structured data is fine until it returns something slightly wrong and your pipeline crashes. I built a parse cascade that degrades gracefully:
+
+1. Try XML tags first (`<category_path>`, `<tags>`, `<summary>`)
+2. Fall back to fenced JSON
+3. Fall back to bare JSON
+4. If all else fails, return a deterministic fallback dict with the post text as the title and `AI-Engineering/Emerging-Research/Unsorted` as the category
+
+Step 0 before any of this: strip `<think>...</think>` blocks. Reasoning models like DeepSeek-R1 and Qwen3 emit their chain-of-thought inside these tags, and the rejected candidate category often appears there. A naive regex would grab it.
+
+The classifier is abstracted behind a `BaseLLMProvider` interface, so swapping Bedrock for Ollama (or vice versa) is a config change: `"active_llm_provider": "ollama"`.
+
+---
+
+## From Metadata to a Graph
+
+Once a few hundred notes existed, I opened Obsidian's Graph View expecting to see clusters by topic. Instead I got a uniform sphere — every node the same distance from every other node. The reason was structural: each note had rich YAML frontmatter (`category`, `tags`, `source_url`, dates) but nothing in the pipeline ever wrote a direct reference from one note to another. Graph View only draws edges from links (and optionally tags); frontmatter fields alone are invisible to it. Zero edges, uniform repulsion, sphere.
+
+**Tags close part of the gap for free.** The classifier's `<tags>` output was already landing in frontmatter as a flat, deduped list capped at 6 entries. Obsidian has a "Tags" toggle in Graph View settings (off by default) that turns each unique tag into its own node and draws an edge from every note that carries it. Two notes both tagged `rag` get pulled toward the same `#rag` node — no code change, just flipping a setting I hadn't noticed.
+
+**But tags alone give loose clusters, not real connections.** The LLM picks fairly specific tags per post, so overlap between any two *given* notes is often thin even when they're clearly related. Two notes about KV-cache optimization might share zero tags if one emphasizes `inference` and the other `memory-bandwidth`. What I actually wanted was direct `[[wikilinks]]` — the thing Obsidian's graph is built around.
+
+I didn't want to touch the extraction pipeline to do this. Re-running classification against the whole vault every time a new post lands would mean re-scoring hundreds of already-good notes just to link a handful of new ones. So it's a separate, idempotent script (`scripts/link_notes.py`) that runs after the scrapers, not inside them:
+
+1. **Shortlist by tags + category — pure code, no LLM.** For a note missing a `## Related` section, score every other note by shared tags and matching category folder, take the top ~12. This is a set intersection over frontmatter already in memory — free, and it runs against the entire vault instantly regardless of size.
+2. **Judge the shortlist with a cheap model.** Send only the target note's title + summary and those 12 candidates' title + summary pairs to Claude Haiku on Bedrock — not the full text, and not the full vault. It returns the indices of candidates that share a real concept or technique, not just a loose theme.
+3. **Write the links both ways.** The target note gets `[[Title]]` links to what Haiku picked. Each picked note also gets a `[[Target Title]]` backlink appended to its own `## Related` section — plain text, no second LLM call — so the graph stays bidirectional without doubling the cost.
+
+```python
+def shortlist_candidates(target, notes, top_k):
+    scored = []
+    for path, note in notes.items():
+        shared_tags = len(target["tags"] & note["tags"])
+        same_category = note["category"] == target["category"]
+        score = 2 * shared_tags + (3 if same_category else 0)
+        if score > 0:
+            scored.append((score, path))
+    scored.sort(reverse=True)
+    return [path for _, path in scored[:top_k]]
+```
+
+The part I like most: cost stays flat as the vault grows. Only notes without a `## Related` section get scored, and each one costs exactly one Haiku call against a fixed ~12-candidate prompt — the same whether the vault has 50 notes or 5,000. Adding new posts and re-running the script links the new ones in and backfills whatever they connect to; old notes are otherwise untouched. Graph View went from a sphere to visibly clustered topic neighborhoods after one run over the existing backlog.
+
+---
+
+## What I'd Change
+
+**LinkedIn URL parsing is brittle.** The `data-chameleon-result-urn` attribute could rename again. I'd add a fallback that looks for any `<a href="/feed/update/...">` link within the card, with the URN attribute as the preferred path.
+
+**Relative date parsing has edge cases.** LinkedIn also shows `"just now"` and `"edited"` which the regex doesn't handle. These fall through to `date_posted: ""` rather than crashing, but it's a gap.
+
+**Scholar coverage is uneven.** The 220-query monthly budget covers the pool once at priority order. A researcher with a lot of publications gets the same 10-result query as one with few. Weighting by recent publication activity would improve it.
+
+**Social summaries aren't verified.** The LLM summary of 5 tweets per researcher goes straight to the note without any fact-checking pass. For now I read these as rough theme summaries, not authoritative descriptions.
+
+The vault has been running for a week. It's already useful — I opened Obsidian this morning and had 40+ classified posts from my LinkedIn backlog, organized by topic, with summaries I could skim in 30 seconds each.
