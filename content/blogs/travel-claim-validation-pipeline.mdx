@@ -8,25 +8,17 @@ published: true
 
 ## The Problem
 
-Large organisations process hundreds of employee travel expense claims every month. Each claim consists of a structured JSON payload from the internal workflow system — declaring trip dates, destinations, and expense amounts — alongside scanned PDF receipts as attachments. Finance reviewers were manually cross-checking these two sources, which was slow, inconsistent, and error-prone.
+Large organisations process hundreds of employee travel expense claims every month. Each one shows up as two things that are supposed to agree with each other: a structured JSON payload from the internal workflow system declaring trip dates, destinations, and expense amounts, and a stack of scanned PDF receipts backing it up. Finance reviewers were cross-checking these by hand, which was slow, inconsistent, and easy to get wrong.
 
-The ask: automate the cross-check. Flag suspect claims. Get results into reviewers' hands every morning.
+So the goal became pretty simple to state, even if it wasn't simple to build: automate the cross-check, flag anything suspicious, and have results waiting for reviewers every morning.
 
 ---
 
 ## What the Pipeline Does
 
-At a high level, the pipeline:
+At a high level, the pipeline pulls claim JSONs, PDFs, and supporting CSVs off an SFTP server, sends the PDFs to Claude Sonnet via AWS Bedrock for structured receipt extraction, then cross-references the extracted amounts, names, and dates against the declared JSON payload. From there it applies accommodation policy caps based on employee grade, checks whether the declared trip location lines up with the employee's known geographic presence, writes a validation report as CSV, JSON, and Excel, persists results to SQLite, and finally uploads everything back to SFTP and cleans up stale input files.
 
-1. Downloads claim JSONs, PDFs, and supporting CSVs from an SFTP server
-2. Sends PDFs to Claude Sonnet (via AWS Bedrock) for structured receipt extraction
-3. Cross-references extracted amounts, names, and dates against the declared JSON payload
-4. Applies accommodation policy caps based on employee grade
-5. Checks whether the declared trip location matches the employee's known geographic presence
-6. Writes a validation report (CSV + JSON + Excel) and persists results to SQLite
-7. Uploads outputs to SFTP and cleans up stale input files
-
-Each night's run covers claims from D, D-1, and D-2 — claims already processed without errors are skipped automatically.
+Each night's run covers claims from D, D-1, and D-2. Anything already processed without errors gets skipped automatically — no point re-validating a claim that already passed.
 
 ---
 
@@ -48,41 +40,41 @@ Each night's run covers claims from D, D-1, and D-2 — claims already processed
 
 ## The Journey
 
-### Stage 1 — Extraction
+### Getting structured data out of scanned receipts
 
-The first real challenge was getting structured data out of scanned receipts. The PDFs ranged from clean digital prints to badly photographed handwritten bills.
+This was the first real challenge, and it turned out to be harder than I expected. The PDFs ranged from clean digital prints to badly photographed handwritten bills, and there was no telling which you'd get until you opened the file.
 
-I settled on a two-step approach: pdf2image converts each page to a compressed JPEG, then Claude Sonnet receives all pages for a case in a single prompt via a tool-use schema. The schema forces the model to output structured fields — amounts by category (accommodation, transport, food), person counts, travel metadata, receipt dates — rather than free text. This made downstream validation deterministic.
+I settled on a two-step approach: pdf2image converts each page to a compressed JPEG, and Claude Sonnet receives all pages for a case in a single prompt via a tool-use schema. The schema forces the model to output structured fields — amounts by category (accommodation, transport, food), person counts, travel metadata, receipt dates — instead of free text. That one decision is what made downstream validation deterministic instead of a parsing exercise.
 
-Early runs surfaced edge cases: encrypted PDFs, blank pages, Bengali-script receipts, and handwritten amounts. I added quality flags for each (`bad_document_quality`, `has_handwriting`, `has_bengali`) that feed into the final review score.
+Early runs surfaced the edge cases you'd expect once real-world documents hit the pipeline: encrypted PDFs, blank pages, Bengali-script receipts, handwritten amounts. Rather than trying to handle every case perfectly, I added quality flags for each — `bad_document_quality`, `has_handwriting`, `has_bengali` — and let those feed into the final review score.
 
-### Stage 2 — Validation
+### Cross-checking the numbers
 
-With extracted data in hand, validation became a three-level problem:
+With extracted data in hand, validation turned into a three-level problem:
 
-**Amount matching** — compare declared totals (from JSON) against extracted totals (from PDFs) at two levels: an overall L1 check and a per-category L2 breakdown. The threshold is 1% deviation, configurable.
+**Amount matching** compares declared totals from the JSON against extracted totals from the PDFs, at two levels — an overall check and a per-category breakdown. The threshold is 1% deviation, and it's configurable.
 
-**Identity matching** — verify the employee name on receipts matches the claimant. `token_sort_ratio` at threshold 70 handles transcription variation. Name + date matching produces a composite score; below 20 triggers review (only when attachments exist).
+**Identity matching** verifies the employee name on receipts actually matches the claimant. `token_sort_ratio` at a threshold of 70 handles the usual transcription variation you get from OCR. Name and date matching combine into a composite score, and anything below 20 triggers a review — but only when attachments actually exist.
 
-**Policy enforcement** — accommodation reimbursement is capped per night based on employee grade. The grade mapping is looked up from a daily-refreshed CSV that IT drops on SFTP, keyed by employee ID.
+**Policy enforcement** caps accommodation reimbursement per night based on employee grade. The grade mapping comes from a CSV that IT refreshes daily on SFTP, keyed by employee ID.
 
-### Stage 3 — Location Plausibility
+### Does the trip location even make sense?
 
-The third validation dimension came later: does the declared trip destination make sense for where this employee actually was?
+This third validation dimension came later, once the obvious checks were in place. The question it answers: does the declared trip destination make sense for where this employee actually was?
 
-An external service receives a CSV of phone numbers with trip date ranges, runs network location queries, and deposits a result CSV with each subscriber's detected location and up to 5 neighbouring cells.
+An external service takes a CSV of phone numbers with trip date ranges, runs network location queries against them, and hands back a result CSV with each subscriber's detected location plus up to 5 neighbouring cells.
 
-The locations are in `"District-Thana"` format (specific to the geography here). The pipeline constructs the same format from the claim's origin/destination fields, then fuzzy-matches using `token_sort_ratio` at threshold 85. A single match across any row or neighbour column is enough to pass. If the number isn't in the CSV the flag is `unidentified`; present but no match is `not_match`.
+The locations come back in `"District-Thana"` format, which is specific to the geography here. The pipeline builds the same format from the claim's origin and destination fields, then fuzzy-matches using `token_sort_ratio` at a threshold of 85 — a single match across any row or neighbour column is enough to pass. If the phone number isn't in the CSV at all, the flag is `unidentified`; if it's there but nothing matches, it's `not_match`.
 
 ### The Date Rollover Problem
 
-The subscriber CSV is generated at 23:59 using today's date as the filename. The main pipeline runs at ~00:05 — by which point the calendar has rolled over. The location service uses the filename date to know which response CSV to produce.
+The subscriber CSV gets generated at 23:59 using today's date as the filename. The main pipeline runs about five minutes later, at 00:05 — and by then the calendar has already rolled over to a new day. The location service, meanwhile, is still using the filename date to know which response CSV to produce. Two clocks, technically agreeing, producing a mismatch anyway.
 
-Fix: the CSV generator writes the run-date string to a small `data/.run_date` file immediately after generating the CSV. The main pipeline reads this at startup, so even at 00:05 it's looking for the correct previous-day filename.
+The fix was simpler than the bug: the CSV generator writes its run-date string to a small `data/.run_date` file right after generating the CSV. The main pipeline reads that file at startup, so even at 00:05 it knows to look for the correct previous-day filename.
 
-### Stage 4 — Cleanup
+### Cleaning up after itself
 
-Input files accumulate on SFTP. After upload, the pipeline lists the input directory, parses the date embedded in each filename, and deletes anything strictly older than D-2. Files without a parseable date are left untouched.
+Input files pile up on SFTP if nothing removes them. After upload, the pipeline lists the input directory, parses the date embedded in each filename, and deletes anything strictly older than D-2. Anything without a parseable date gets left alone — better to accumulate a few stray files than delete something by mistake.
 
 ---
 
@@ -95,16 +87,16 @@ The pipeline runs on a production Ubuntu VM on a two-step cron schedule:
 05 00 * * *  # main pipeline: download → poll location → extract → validate → upload → cleanup
 ```
 
-The main pipeline polls SFTP every 5 minutes for up to 3 hours waiting for the location CSV before proceeding without it. This gives the location service a comfortable window while keeping the report ready before the Finance team's morning stand-up.
+The main pipeline polls SFTP every 5 minutes for up to 3 hours, waiting for the location CSV before giving up and proceeding without it. That gives the location service a generous window to finish while still keeping the report ready ahead of Finance's morning stand-up.
 
-Docker wraps the whole thing for consistent dependency management across environments. The image is built from a slim Python base with `poppler-utils` for PDF rendering.
+Docker wraps the whole thing so dependencies behave the same way everywhere it runs. The image is built from a slim Python base with `poppler-utils` added for PDF rendering.
 
 ---
 
 ## What I'd Do Differently
 
-**Async extraction.** Claude calls are made with a thread pool right now. True async I/O with `asyncio` would be cleaner and likely faster for large batches.
+**Async extraction.** Claude calls run through a thread pool right now. Real async I/O with `asyncio` would be cleaner and probably faster once batches get large.
 
-**Schema versioning.** The extraction tool schema evolved several times. A proper versioned schema registry would have made it easier to replay old runs against new schemas.
+**Schema versioning.** The extraction tool schema has changed shape a few times already. A proper versioned schema registry would make it much less painful to replay old runs against a newer schema.
 
-**Observability.** Rotating log files work for a nightly job, but a lightweight metrics setup would give better visibility into token spend, extraction error rates, and per-category deviation trends over time.
+**Observability.** Rotating log files are fine for a nightly job, but I'd like better visibility into token spend, extraction error rates, and per-category deviation trends over time — something a lightweight metrics setup would give me for free.

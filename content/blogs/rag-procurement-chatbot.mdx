@@ -8,22 +8,17 @@ published: true
 
 ## The Problem
 
-An organization needed instant answers to complex questions about procurement policies, procedures, and financial documents. Manual document search was slow, and traditional keyword-based search failed to understand context and semantic relationships.
+An organization needed instant answers to complex questions about procurement policies, procedures, and financial documents. Manual document search was slow, and plain keyword search kept missing the point — it has no idea that "budget cap" and "spending limit" mean roughly the same thing.
 
-The challenge:
-- Users asking questions in natural language about dense financial documents
-- Need for accurate context retrieval to avoid hallucination
-- Support for multiple LLM backends (Claude via AWS Bedrock and local Ollama)
-- Conversational context to handle follow-up questions
-- Real-time indexing as new documents are added
+The requirements stacked up quickly: users wanted to ask questions in plain language about dense financial documents, answers needed to be grounded well enough that the model wasn't just making things up, multiple LLM backends had to work (Claude via AWS Bedrock for production, local Ollama for testing), follow-up questions needed to actually carry context forward, and the index had to stay current as new documents landed.
 
-The goal: build a RAG (Retrieval-Augmented Generation) chatbot that understands questions, retrieves relevant document chunks, and generates accurate answers grounded in source material.
+So the goal was a RAG chatbot — retrieval-augmented generation — that understands the question, pulls the right document chunks, and answers from what's actually in those chunks rather than from vibes.
 
 ---
 
 ## Architecture Overview
 
-The system follows a classic RAG pipeline with enhancements for accuracy and performance:
+The system follows a fairly standard RAG pipeline, with a few extra steps bolted on for accuracy and speed:
 
 ```
 User Query
@@ -37,12 +32,7 @@ User Query
 Answer with source citations
 ```
 
-Key components:
-- **Indexing**: PDF ingestion, chunking, and vector embedding
-- **Retrieval**: Hybrid search combining vector similarity and BM25 ranking
-- **Reranking**: Context-aware reranking to surface only the most relevant chunks
-- **Generation**: Conversational LLM chain with memory and glossary expansion
-- **Deployment**: Streamlit UI with real-time document sync
+The pieces that make it up: indexing (PDF ingestion, chunking, vector embedding), retrieval (hybrid search combining vector similarity and BM25), reranking (context-aware filtering down to the chunks that actually matter), generation (a conversational LLM chain with memory and glossary expansion), and deployment (a Streamlit UI that syncs with documents in real time).
 
 ---
 
@@ -65,88 +55,45 @@ Key components:
 
 ## The Journey
 
-### Stage 1 — Document Ingestion & Smart Chunking
+### Chunking documents without losing what makes them useful
 
-Naively chunking PDFs at fixed sizes loses context and creates fragments that are hard to answer questions about.
+Naive fixed-size chunking loses context and produces fragments that are genuinely hard to answer questions about — cut a paragraph in half and you've got two pieces that individually mean nothing. I used `RecursiveCharacterTextSplitter` instead, which chunks recursively (sentences, then paragraphs, then fixed size as a last resort) so it preserves semantic boundaries rather than slicing blindly. The default is 1000 characters with a 200-character overlap, which keeps context bridging across chunk edges. Every chunk keeps its source file, page number, and section info for traceability, tables get extracted via img2table plus Tesseract/Textract OCR and preserved as markdown, and indexing is incremental — only new documents get re-chunked, with processed files tracked in `chunked_docs.pkl`.
 
-I implemented:
+The one snag: oversized chunks, usually tables or long lists, blew past the embedding model's token limit. `token_exceed_split()` splits anything over the limit and merges the sub-chunks back together with overlap so nothing gets orphaned.
 
-- **RecursiveCharacterTextSplitter** — Chunks recursively (sentences → paragraphs → fixed size), preserving semantic boundaries
-- **Configurable chunk size/overlap** — Default 1000 chars with 200-char overlap to maintain context across chunks
-- **Metadata preservation** — Each chunk retains source file, page number, and section info for traceability
-- **Table extraction** — img2table + Tesseract/Textract OCR for structured data, preserving tables as markdown
-- **Incremental indexing** — Only re-chunk new documents; track processed files in `chunked_docs.pkl`
+### Combining vectors and keyword search
 
-One challenge: oversized chunks (tables, lists) that exceeded embedding token limits. Solution: split tokens exceeding the limit via `token_exceed_split()`, then merge sub-chunks with overlap.
+Vector similarity alone misses exact terminology matches — ask about a specific clause number and pure semantic search might wander right past it. Keyword search alone has the opposite problem: no sense of meaning at all. Hybrid search fixes both at once.
 
-### Stage 2 — Hybrid Retrieval: Vectors + BM25
+I built a `HybridRetriever` class that runs FAISS similarity search for the top-k semantically similar chunks alongside BM25 ranking on preprocessed text (stopwords stripped, tokenized, scored by TF-IDF), then fuses the two rankings with reciprocal rank fusion: `score = 1 / (k + vector_rank) + 1 / (k + bm25_rank)`. Duplicate results across both methods get merged, and only the top-k survives the fusion step.
 
-Vector similarity alone can miss exact terminology matches. Keyword search alone lacks semantic understanding. The fix is hybrid search.
+Take the query "What is the maximum budget for procurement?" Vector search finds chunks that are semantically about budget policy even if they don't use those exact words. BM25 catches the literal keyword matches in the procedures. RRF fusion then favors whatever ranks well in both — which tends to be exactly the chunk you want.
 
-Implemented a `HybridRetriever` class combining:
+### Filtering out noise before it reaches the LLM
 
-- **Vector search** — FAISS similarity search returns top-k semantically similar chunks
-- **BM25 ranking** — Preprocessed texts (stopword removal, tokenization) ranked by TF-IDF
-- **Fusion** — Reciprocal rank fusion (RRF) combines both rankings: `score = 1 / (k + vector_rank) + 1 / (k + bm25_rank)`
-- **Deduplication** — Merges duplicate results from both methods
-- **Top-N filtering** — Returns only top-k after fusion to reduce noise
+Getting the top-k chunks back is only half the battle — the LLM still ends up staring at a pile of noise if you stop there. The hybrid retriever returns 20 to 30 candidates, and the reranker's job is to cut that down to the 5 that actually matter.
 
-Example: query "What is the maximum budget for procurement?" 
-- Vector search finds semantically similar chunks about budget policies
-- BM25 finds exact keyword matches in procedures
-- RRF fusion prioritizes chunks ranking high in both methods
+`ContextualCompressionRetriever` with FlashRank does this: it takes the user query plus the retrieved chunks, scores each chunk's relevance on a 0–1 scale, keeps only what clears a configurable threshold (0.5 by default), and guarantees the top 5 relevant chunks come out the other end. This step alone cut hallucination dramatically, simply because the LLM stopped seeing irrelevant context it might otherwise try to make sense of.
 
-### Stage 3 — Context-Aware Reranking
+### Teaching the system to understand abbreviations
 
-Retrieving top-k chunks is good, but the LLM still sees noise. The hybrid retriever returns 20-30 candidates; the reranker narrows it to the most relevant 5.
+Financial documents are thick with abbreviations — LOA, RICA, SMP — and embeddings tend to choke on them; there's no semantic signal in three random capital letters. So I added a glossary-aware preprocessing step: a CSV maps each abbreviation to its full definition, a single compiled regex pattern (word boundaries, case-insensitive) catches all of them at once, and when a user types "LOA" the query gets expanded to "LOA (Letter of Authority)" before it's ever embedded. The abbreviations also get explained directly in the prompt context, so Claude has what it needs to resolve ambiguity on its own.
 
-Added `ContextualCompressionRetriever` with FlashRank:
+Ask "What does LOA mean?" and the glossary quietly rewrites it to "What does LOA (Letter of Authority) mean?" before embedding — which gives the embedding model something real to work with instead of three letters it's never seen mean anything.
 
-- **Input** — User query + retrieved chunks
-- **Ranking** — FlashRank scores each chunk's relevance to the query (0-1 confidence)
-- **Filtering** — Keep only chunks with score > threshold (configurable, default 0.5)
-- **Output** — Top 5 most relevant chunks guaranteed
+### Making follow-up questions actually work
 
-This step dramatically reduced hallucination by ensuring the LLM only sees truly relevant context.
+Any RAG chatbot worth using has to handle follow-ups. "What's the budget?" followed by "Can you break it down by category?" only makes sense if the second question remembers the first.
 
-### Stage 4 — Glossary Expansion & Abbreviation Handling
+I built this on LangGraph: a message buffer stores every user and assistant turn in session state, deduplication stops the same message from getting replayed, and a trimming strategy keeps just the last 3 QA pairs — 6 messages plus the system prompt, 13 messages max — so the context window doesn't grow without bound. LangGraph's `MemorySaver` checkpoints the conversation state, and the system prompt gets injected as a `SystemMessage` so persona and constraints stay consistent turn after turn.
 
-Financial documents use many abbreviations (LOA, RICA, SMP, etc.) that confuse embeddings.
+In practice: the user asks "What's our procurement budget?", the assistant answers "$X million" and that gets stored in memory. Then the user asks "Break it down by category," and the assistant uses the stored context to answer the follow-up directly — it doesn't need to repeat the first answer to make sense of the second.
 
-I added glossary-aware preprocessing:
+### Supporting both Bedrock and Ollama
 
-- **CSV glossary** — Map abbreviations to full definitions
-- **Regex compilation** — Build a single compiled pattern for all abbreviations (word boundaries, case-insensitive)
-- **Query expansion** — When user types "LOA", expand it to "LOA (Letter of Authority)" before embedding
-- **Context injection** — Abbreviations are explained in the prompt context, so Claude can resolve ambiguities
+Running both Claude via AWS Bedrock and Ollama locally solved two different problems: Bedrock gave production the structured output and reliability it needed, and Ollama gave local development fast iteration without API costs or latency getting in the way.
 
-Example: user asks "What does LOA mean?" → glossary substitutes "What does LOA (Letter of Authority) mean?" → embedding captures semantics better.
-
-### Stage 5 — Conversational Memory & Multi-Turn Context
-
-A RAG chatbot must handle follow-up questions. "What's the budget?" followed by "Can you break it down by category?" needs conversation memory.
-
-Implemented with LangGraph:
-
-- **Message buffer** — Store all user + assistant messages in session state
-- **Deduplication** — Avoid replaying the same message twice
-- **Trimming strategy** — Keep last 3 QA pairs (6 messages + system prompt = 13 messages max)
-- **LangGraph integration** — MemorySaver checkpoints conversation state
-- **System prompt** — Injected as SystemMessage, providing consistent persona and constraints
-
-Example flow:
-1. User: "What's our procurement budget?"
-2. Assistant: "Your budget is $X million" (memory stores this)
-3. User: "Break it down by category"
-4. Assistant: Uses prior message to contextualize breakdown, doesn't repeat "Your budget is $X million"
-
-### Stage 6 — Dual LLM Support: Bedrock & Ollama
-
-Supporting both Claude (via AWS Bedrock) and Ollama enabled:
-- Production use with Bedrock's structured output and reliability
-- Local testing with Ollama for rapid iteration (no API costs, no latency)
-
-Architecture:
+Here's the architecture:
 
 ```python
 if api_type == 'bedrock':
@@ -162,17 +109,13 @@ elif api_type == 'ollama':
     )
 ```
 
-Both support streaming, which displays incremental responses to users in real-time.
+Both backends support streaming, so responses show up incrementally instead of all at once.
 
-### Stage 7 — Live Document Sync & Rebuild
+### Keeping the index in sync as documents change
 
-Documents change frequently. The system needed to:
-1. **Auto-detect new files** in the PDF directory
-2. **Update vector store** when new documents arrive
-3. **Remove orphaned documents** if a file is deleted
-4. **Preserve existing vectors** to avoid rebuild on every startup
+Documents in this system don't sit still — new ones show up, old ones get deleted, and the vector store needs to keep pace without rebuilding from scratch every time. That meant auto-detecting new files in the PDF directory, updating the vector store only for what's new, removing anything orphaned by a deleted file, and leaving existing vectors alone whenever nothing had actually changed.
 
-Implemented incremental indexing:
+Here's the incremental indexing logic that handles it:
 
 ```python
 current_files = set([f for f in os.listdir(PDF_PATH) if f.endswith('.pdf')])
@@ -195,86 +138,35 @@ if needs_update:
     rebuild_vector_store(docs)
 ```
 
-Benefit: A 10-file system can add a new document and re-index in seconds, not minutes.
+The practical effect: a small system with 10 files can add a new document and be re-indexed in seconds instead of minutes.
 
-### Stage 8 — Caching & Performance Optimization
+### Caching what's already been computed
 
-Repeated queries with identical parameters don't need re-fetching. Added two layers of caching:
-
-- **LRU cache for similarity search** — `@lru_cache(maxsize=100)` on the vector store query function
-- **Document cache in retriever** — `_doc_cache` stores already-retrieved documents to avoid duplicate processing
-
-Result: Second and subsequent calls to the same query are ~10x faster.
+A query that's already been answered doesn't need to be re-fetched from scratch. I added two layers of caching on top of the retrieval path: an LRU cache (`@lru_cache(maxsize=100)`) on the vector store query function, and a document cache in the retriever itself (`_doc_cache`) that keeps already-retrieved documents around to avoid reprocessing them. Together they make the second and later calls to the same query roughly 10x faster than the first.
 
 ---
 
 ## Why This Approach Worked
 
-1. **Hybrid search reduces hallucination** — By combining vector + BM25, the system finds both semantic matches and exact keyword hits, reducing the chance of LLM inventing answers
-2. **Reranking adds precision** — FlashRank ensures only top-relevance chunks reach the LLM, cutting noise
-3. **Glossary expansion bridges embeddings and domain language** — Abbreviations are a weak point for embeddings; explicit expansion fixes this
-4. **Incremental indexing scales** — New documents don't trigger full rebuild; vector store stays efficient
-5. **Dual LLM support enables fast iteration** — Ollama for local dev, Bedrock for production
-6. **Conversational memory feels natural** — Users can ask follow-ups without repeating context
+A few decisions ended up mattering more than the rest. Hybrid search cut down hallucination by catching both semantic matches and exact keyword hits, so the model had less reason to invent an answer when retrieval came up short. Reranking with FlashRank meant only the genuinely relevant chunks reached the LLM in the first place. Glossary expansion closed the gap between how embeddings work and how domain abbreviations actually get used — a weak spot that's easy to overlook until you hit it. Incremental indexing kept the vector store efficient as documents piled up, since new files never triggered a full rebuild. Running both Ollama and Bedrock made iteration fast without sacrificing production reliability. And conversational memory made the whole thing feel less like a search box and more like a conversation — users could ask follow-ups without re-explaining themselves.
 
 ---
 
 ## What Could Work Better
 
-### 1. Adaptive Chunking
+**Adaptive chunking.** Right now chunks are a fixed 1000 characters with overlap, which is simple but arbitrary — it has no idea where one idea actually ends and another begins. Chunking at semantic boundaries instead (using sentence transformers to detect where meaning shifts, then cutting there) would keep related sentences together and unrelated ones apart, instead of splitting purely on character count.
 
-**Current:** Fixed chunk size (1000 chars) with overlap.
+**Knowledge graph retrieval.** The system currently treats documents as flat chunks scored by BM25 and vectors. Extracting entities during ingestion — vendor names, budget lines, approval steps — and building an actual graph out of them (Claude for extraction, something like Neo4j to hold the structure) would let a question like "Who approves budgets over $100k?" get answered by traversing approval rules to budget thresholds, rather than hoping the right chunk happens to mention both.
 
-**Better:** Chunk based on semantic boundaries detected via embedding similarity. If two sentences are semantically distant, they shouldn't be in the same chunk. This would preserve context while reducing noise.
+**Multi-query expansion.** A single query goes straight to vector and BM25 search today, but that misses documents phrased differently than the question. Expanding "What's the procurement budget?" into a few semantically equivalent phrasings first — "What is the total procurement budget?", "How much money do we allocate for procurement?", "Procurement budget allocation amount" — then searching all of them and fusing the results, would catch documents that never use the querier's exact words.
 
-**How:** Use sentence transformers to detect breaks in semantic continuity, then chunk at those boundaries.
-
----
-
-### 2. Sub-Graph Retrieval (Knowledge Graphs)
-
-**Current:** Flat document chunks with BM25 + vectors.
-
-**Better:** Extract entities (vendor names, budget lines, approval steps) and build a knowledge graph. Then retrieve by traversing semantic relationships.
-
-**Example:** "Who approves budgets over $100k?" → entity query for approval rules + traversal to budget thresholds.
-
-**How:** Use Claude to extract entities during ingestion, build a graph structure (Neo4j or similar), then retrieve by graph traversal + vector hybrid search.
-
----
-
-### 3. Multi-Query Expansion
-
-**Current:** User's single query → vector + BM25 search.
-
-**Better:** Expand a single query into 3-5 semantically equivalent phrasings (via LLM), search each, then deduplicate and fuse results. This catches documents using different terminology.
-
-**Example:** "What's the procurement budget?" expands to:
-- "What is the total procurement budget?"
-- "How much money do we allocate for procurement?"
-- "Procurement budget allocation amount"
-
-Then search all three and combine results.
-
----
-
-### 4. Streaming Reranking
-
-**Current:** Retrieve all chunks, rerank all, then pass to LLM.
-
-**Better:** Rerank on-the-fly as chunks come in from vector search. Stop reranking early (after top-5 high-confidence matches) to reduce latency.
-
-**Benefit:** Answers appear faster; user sees streaming responses sooner.
+**Streaming reranking.** Right now the pipeline retrieves everything, reranks everything, and only then hands it to the LLM — a strictly sequential path. Reranking on the fly as chunks arrive from vector search, and stopping early once 5 high-confidence matches show up, would shave off latency and let streaming responses start sooner.
 
 ---
 
 ## Performance Optimization Tips
 
-### 1. Batch Embedding
-
-**Current:** Embed chunks one-by-one during ingestion.
-
-**Better:** Batch embed 32 or 64 chunks at once. The Titan embed API supports batching; chunking requests reduces API overhead.
+**Batch embedding.** Embedding chunks one at a time during ingestion means one API call per chunk — 1000 chunks, 1000 calls. The Titan embed API supports batching, so grouping 32 or 64 chunks per request cuts that down to roughly 32 calls for the same 1000 chunks:
 
 ```python
 # Before: 1000 API calls for 1000 chunks
@@ -288,15 +180,9 @@ for i in range(0, len(chunks), batch_size=32):
     embeddings.extend(batch_embeddings)
 ```
 
-**Speedup:** 10-20x faster embedding for large document sets.
+That's roughly 10-20x faster embedding for large document sets.
 
----
-
-### 2. Approximate Nearest Neighbor Search
-
-**Current:** FAISS with exact L2 distance.
-
-**Better:** Use FAISS IVF (Inverted File) index for approximate search. Trade tiny accuracy loss for massive speed gains.
+**Approximate nearest neighbor search.** FAISS with exact L2 distance is precise but slow once you're past 100k vectors. Switching to a FAISS IVF (inverted file) index trades a sliver of accuracy for a large speed gain:
 
 ```python
 # Before: Exact search (slow for 100k+ vectors)
@@ -309,15 +195,9 @@ index.train(np.array([d.embedding for d in docs]))
 index.add(np.array([d.embedding for d in docs]))
 ```
 
-**Speedup:** 100x faster search; 99% accuracy retention for top-5 results.
+That's about 100x faster search while keeping 99% accuracy on top-5 results — a trade worth making for most retrieval workloads.
 
----
-
-### 3. Prefix Caching for LLM Calls
-
-**Current:** Every LLM call includes full system prompt + context.
-
-**Better:** Use Claude's prompt caching (available in recent API versions). Repeated system prompts and glossary sections are cached; only new chunks are charged full rate.
+**Prompt caching for LLM calls.** Every LLM call right now sends the full system prompt plus context from scratch. Claude's prompt caching changes that: repeated system prompts and glossary sections get cached, and only the chunks that actually vary per call are charged at full rate.
 
 ```python
 messages = [
@@ -342,15 +222,9 @@ messages = [
 ]
 ```
 
-**Savings:** 90% reduction in token costs for repeated patterns.
+For repeated patterns, that's roughly a 90% reduction in token costs.
 
----
-
-### 4. Parallel Chunk Retrieval
-
-**Current:** Retrieve chunks sequentially (vector search, then BM25, then rerank).
-
-**Better:** Fetch vectors and BM25 in parallel using ThreadPoolExecutor.
+**Parallel chunk retrieval.** Retrieval currently runs sequentially — vector search, then BM25, then rerank — when two of those three steps don't actually depend on each other. Running vector and BM25 search in parallel with a `ThreadPoolExecutor` closes that gap:
 
 ```python
 with ThreadPoolExecutor(max_workers=2) as executor:
@@ -363,60 +237,27 @@ with ThreadPoolExecutor(max_workers=2) as executor:
     fused_results = rrf_fusion(vector_results, bm25_results)
 ```
 
-**Speedup:** 1.5x faster retrieval (retrieval time dominated by I/O, not CPU).
+The gain is modest — about 1.5x faster retrieval — since I/O dominates the time here, not CPU.
 
----
+**Lazy loading with streaming.** Loading every chunk into memory upfront works fine at small scale and stops working at large scale. Streaming chunks from FAISS on demand, and only loading the top-k matches into memory, is what actually lets this scale past 10 million vectors without running out of memory.
 
-### 5. Lazy Loading with Streaming
-
-**Current:** Load all chunks into memory upfront.
-
-**Better:** Stream chunks from FAISS on-demand. Only load top-k matches into memory.
-
-**Benefit:** Scales to 10M+ vectors without OOM (out-of-memory) errors.
-
----
-
-### 6. Quantized Embeddings
-
-**Current:** Full-precision embeddings (768 dimensions × 4 bytes float32).
-
-**Better:** Quantize embeddings to int8 (768 dims × 1 byte). Reduces memory by 4x, speeds up search.
+**Quantized embeddings.** Full-precision embeddings — 768 dimensions at 4 bytes each in float32 — take up more memory than they need to for most retrieval purposes. Quantizing down to int8 (still 768 dimensions, but 1 byte each) cuts memory by 4x and speeds up search, at the cost of maybe 1-2% accuracy:
 
 ```python
 embeddings_fp32 = embedding_model.encode(texts)  # shape: (n, 768), dtype float32
 embeddings_int8 = np.round(embeddings_fp32 * 127).astype(np.int8)  # quantized
 ```
 
-**Trade-off:** 1-2% accuracy loss; 4x memory savings.
-
 ---
 
 ## Deployment Considerations
 
-**Current Setup:**
-- Streamlit app running on EC2 / local server
-- FAISS index and documents cached locally
-- Config-driven (TOML for settings, .env for secrets)
-
-**For Production Scale:**
-1. **Vector Store** — Migrate from FAISS to Pinecone / Weaviate for managed scaling
-2. **LLM** — Keep Bedrock; add retry logic and exponential backoff
-3. **Caching** — Redis for distributed caching (embeddings, reranking scores)
-4. **Monitoring** — Log retrieval quality (did reranked chunks contain the answer?), LLM latency, embedding staleness
-5. **A/B Testing** — Compare retrieval strategies (BM25 only vs. hybrid vs. knowledge graph) on real queries
+Right now this runs as a Streamlit app on EC2 (or a local server), with the FAISS index and documents cached locally, and everything config-driven through TOML for settings and `.env` for secrets. That's fine for the current scale, but scaling further would mean a few changes: moving from FAISS to something like Pinecone or Weaviate for managed vector store scaling, keeping Bedrock but adding retry logic and exponential backoff, introducing Redis for distributed caching of embeddings and reranking scores, logging retrieval quality (did the reranked chunks actually contain the answer?) alongside LLM latency and embedding staleness, and running A/B tests comparing BM25-only versus hybrid versus knowledge-graph retrieval on real queries.
 
 ---
 
 ## Summary
 
-The RAG-Based Procurement Chatbot demonstrates that RAG quality hinges on retrieval precision, not just LLM power. By combining:
-- Hybrid search (vectors + BM25)
-- Context-aware reranking
-- Glossary expansion
-- Incremental indexing
-- Conversational memory
+If there's one thing this project made clear, it's that RAG quality comes down to retrieval precision far more than raw LLM power. Hybrid search, context-aware reranking, glossary expansion, incremental indexing, and conversational memory — none of these are individually clever, but together they're what makes the system deliver accurate, grounded answers instead of confident guesses. Knowledge graphs and multi-query expansion feel like the next places to push for even more precision.
 
-The system delivers accurate, grounded answers to complex document questions. The next frontier is knowledge graphs and multi-query expansion for even higher precision.
-
-**Key Takeaway:** RAG is only as good as the chunks you feed it. Invest in retrieval quality, and the LLM will excel.
+The takeaway I keep coming back to: RAG is only as good as the chunks you feed it. Get retrieval right, and the LLM does the rest without much drama.

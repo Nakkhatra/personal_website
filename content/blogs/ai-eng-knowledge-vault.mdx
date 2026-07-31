@@ -64,7 +64,7 @@ After that, `--all` runs headlessly until the session expires (typically 30-90 d
 
 ## Taxonomy Without Drift
 
-The core challenge with LLM classification is consistency over time. Ask Claude to categorize a post about LoRA fine-tuning today and it might say `Fine-Tuning/LoRA`. Ask it again next month and it says `Parameter-Efficient-Fine-Tuning/Low-Rank-Adaptation`. Both are reasonable but they create two separate folders in your vault.
+The hard part of LLM classification isn't accuracy — it's consistency over time. Ask Claude to categorize a post about LoRA fine-tuning today and it might say `Fine-Tuning/LoRA`. Ask it again next month and it says `Parameter-Efficient-Fine-Tuning/Low-Rank-Adaptation`. Neither answer is wrong, exactly, but now you've got two folders in your vault for the same idea.
 
 I built three layers to fight this:
 
@@ -89,7 +89,7 @@ You add entries here when you notice drift. The threshold and alias list are bot
 
 ## Deduplication
 
-Re-running the pipeline should never create duplicate notes. Each module handles this differently.
+Re-running the pipeline shouldn't create duplicate notes, and each module gets there in its own way.
 
 **LinkedIn** uses the vault as the source of truth. On every run, it walks all `*.md` files, reads the frontmatter of each one, and builds a set of known `source_url` and `source_id` values. Any post already in the vault gets skipped before any LLM call is made. Deleting a note from Obsidian means it gets re-imported — which is intentional.
 
@@ -134,7 +134,7 @@ For scholar papers, SerpApi returns the publication year directly. I added a `Ye
 
 ## Budget Management for SerpApi
 
-The free SerpApi tier gives 250 searches per month. With 26 researchers plus however many vault categories, it's easy to burn through that without covering everything.
+The free SerpApi tier caps out at 250 searches a month. Between 26 researchers and a growing list of vault categories, that budget disappears fast if you're not careful about spending it.
 
 The scholar tracker maintains a state file at `scraper/state/scholar_budget.json`:
 
@@ -170,7 +170,7 @@ No code deployed. Because all selectors live in `config.json`, selector rot is a
 
 ## LLM Output Parsing
 
-Asking an LLM to return structured data is fine until it returns something slightly wrong and your pipeline crashes. I built a parse cascade that degrades gracefully:
+Asking an LLM to return structured data works fine right up until it doesn't — one slightly malformed response and your pipeline crashes. So instead of trusting the happy path, I built a parse cascade that degrades gracefully:
 
 1. Try XML tags first (`<category_path>`, `<tags>`, `<summary>`)
 2. Fall back to fenced JSON
