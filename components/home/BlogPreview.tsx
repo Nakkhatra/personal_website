@@ -17,6 +17,7 @@ export default function BlogPreview() {
     <section className="py-20">
       <Container>
         <SectionHeading
+          index="03"
           title="Latest Blog Posts"
           subtitle="Thoughts on AI, engineering, and more"
           link={{ label: "View all posts", href: "/blogs" }}

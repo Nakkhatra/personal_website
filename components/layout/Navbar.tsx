@@ -46,9 +46,14 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             href="/"
-            className="text-lg font-heading font-bold text-accent"
+            className="group flex items-baseline gap-1.5"
           >
-            {siteConfig.initials}
+            <span className="text-lg font-heading font-bold text-accent tracking-tight">
+              {siteConfig.initials}
+            </span>
+            <span className="hidden sm:inline text-sm font-medium text-text-muted group-hover:text-text-secondary transition-colors">
+              {siteConfig.shortName.split(" ")[0]}
+            </span>
           </Link>
 
           {/* Desktop nav */}
@@ -65,7 +70,7 @@ export default function Navbar() {
                   href={link.href}
                   whileHover={shouldReduce ? {} : { y: -2 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                  className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? "text-accent"
                       : "text-text-secondary hover:text-text-primary hover:bg-surface"
@@ -91,7 +96,7 @@ export default function Navbar() {
             </div>
             <a
               href={`mailto:${siteConfig.email}`}
-              className="hidden md:inline-flex px-5 py-2 text-sm font-medium rounded-full bg-accent text-background hover:bg-accent-hover transition-colors animate-contact-glow"
+              className="hidden md:inline-flex px-5 py-2 text-sm font-medium rounded-xl bg-accent text-background hover:bg-accent-hover transition-colors animate-contact-glow"
             >
               Contact Me
             </a>

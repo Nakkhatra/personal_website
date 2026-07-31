@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Sora, JetBrains_Mono } from "next/font/google";
+import { Instrument_Sans, Sora, JetBrains_Mono } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
@@ -11,19 +11,22 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { activeTheme, buildCssVars } from "@/lib/theme";
 import "./globals.css";
 
-const inter = Inter({
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-instrument",
+  weight: ["400", "500", "600", "700"],
 });
 
 const sora = Sora({
   subsets: ["latin"],
   variable: "--font-sora",
+  weight: ["400", "600", "700"],
 });
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -60,7 +63,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${sora.variable} ${jetbrains.variable}`}
+      className={`${instrumentSans.variable} ${sora.variable} ${jetbrains.variable}`}
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: buildCssVars(activeTheme) }} />

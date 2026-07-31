@@ -68,7 +68,7 @@ export default function Button({
   const { ref, springX, springY, onMouseMove, onMouseLeave } = useMagnetic(shouldReduce);
 
   const isPrimary = variant === "primary";
-  const base = `inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${variants[variant]}${isPrimary ? " btn-shine" : ""} ${className}`;
+  const base = `inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${variants[variant]}${isPrimary ? " btn-shine" : ""} ${className}`;
 
   const motionProps = {
     style: { x: springX, y: springY },

@@ -46,11 +46,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setTheme = useCallback((name: ThemeName) => {
+    const root = document.documentElement;
+    root.classList.add("theme-transition");
     const t = themes[name];
     setThemeName(name);
     setThemeObj(t);
     applyThemeVars(t);
     localStorage.setItem(STORAGE_KEY, name);
+    window.setTimeout(() => root.classList.remove("theme-transition"), 400);
   }, []);
 
   return (

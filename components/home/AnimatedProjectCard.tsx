@@ -78,7 +78,7 @@ export default function AnimatedProjectCard({ project }: { project: Project }) {
       </div>
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
-          {project.topics.map((topic) => (
+            {project.topics.slice(0, 4).map((topic) => (
             <motion.span
               key={topic}
               whileHover={shouldReduce ? {} : { scale: 1.05 }}

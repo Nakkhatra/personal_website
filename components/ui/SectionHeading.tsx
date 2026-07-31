@@ -7,12 +7,14 @@ import { motion, useReducedMotion } from "framer-motion";
 interface SectionHeadingProps {
   title: string;
   subtitle?: string;
+  index?: string;
   link?: { label: string; href: string };
 }
 
 export default function SectionHeading({
   title,
   subtitle,
+  index,
   link,
 }: SectionHeadingProps) {
   const shouldReduce = useReducedMotion();
@@ -26,18 +28,33 @@ export default function SectionHeading({
   return (
     <div className="flex items-end justify-between mb-10">
       <div>
+        {index && (
+          <motion.p
+            {...base}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="font-mono text-caption text-accent mb-3 tracking-widest uppercase"
+          >
+            {index}
+          </motion.p>
+        )}
         <motion.h2
           {...base}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="text-3xl font-bold tracking-tight"
+          transition={{ duration: 0.6, ease: "easeOut", delay: index ? 0.06 : 0 }}
+          className="text-display font-heading"
         >
           {title}
         </motion.h2>
+        <motion.div
+          {...base}
+          transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          className="mt-3 h-px w-12 bg-accent/50"
+          aria-hidden
+        />
         {subtitle && (
           <motion.p
             {...base}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.12 }}
-            className="mt-2 text-text-secondary"
+            className="mt-3 text-text-secondary"
           >
             {subtitle}
           </motion.p>

@@ -5,9 +5,9 @@ import { useReducedMotion } from "framer-motion";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { hexToRgb } from "@/lib/theme";
 
-const STAR_COUNT = 45;
-const CONNECTION_RADIUS = 160;
-const MAX_CONNECTIONS = 5;
+const STAR_COUNT = 28;
+const CONNECTION_RADIUS = 120;
+const MAX_CONNECTIONS = 4;
 
 // Fixed fractional positions — stable across renders and resizes
 const starFractions = Array.from({ length: STAR_COUNT }, () => ({
@@ -35,6 +35,7 @@ export default function ConstellationOverlay() {
 
     const starRgb = hexToRgb(theme.colors.text.primary);
     const accentRgbStr = hexToRgb(theme.colors.accent.primary);
+    const section = canvas.parentElement;
 
     function resize() {
       if (!canvas) return;
@@ -44,17 +45,18 @@ export default function ConstellationOverlay() {
     resize();
 
     function draw() {
-      if (!canvas || !ctx) { rafId = requestAnimationFrame(draw); return; }
+      if (!canvas || !ctx) return;
+      if (!visible) {
+        rafId = 0;
+        return;
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (!visible) { rafId = requestAnimationFrame(draw); return; }
 
       const points = starFractions.map((s) => ({
         x: s.fx * canvas!.width,
         y: s.fy * canvas!.height,
       }));
 
-      // Draw ambient star dots
       for (const p of points) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 0.8, 0, Math.PI * 2);
@@ -62,7 +64,6 @@ export default function ConstellationOverlay() {
         ctx.fill();
       }
 
-      // Draw connection lines from cursor using accent color
       if (mouse.x > 0) {
         const nearby = points
           .map((p) => ({ ...p, d: Math.hypot(p.x - mouse.x, p.y - mouse.y) }))
@@ -71,7 +72,6 @@ export default function ConstellationOverlay() {
           .slice(0, MAX_CONNECTIONS);
 
         for (const p of nearby) {
-          // Distance-based alpha: nearby = bright, far = almost invisible
           const t = 1 - p.d / CONNECTION_RADIUS;
           const alpha = t * 0.22;
 
@@ -82,7 +82,6 @@ export default function ConstellationOverlay() {
           ctx.lineWidth = 1;
           ctx.stroke();
 
-          // Brighten the star dot slightly when connected
           ctx.beginPath();
           ctx.arc(p.x, p.y, 0.8 + t * 0.5, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${accentRgbStr}, ${(t * 0.35).toFixed(3)})`;
@@ -92,8 +91,6 @@ export default function ConstellationOverlay() {
 
       rafId = requestAnimationFrame(draw);
     }
-
-    const section = canvas.parentElement;
 
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -107,6 +104,7 @@ export default function ConstellationOverlay() {
 
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
+      if (visible && !rafId) rafId = requestAnimationFrame(draw);
     });
     io.observe(canvas);
 
@@ -117,6 +115,7 @@ export default function ConstellationOverlay() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      rafId = 0;
       io.disconnect();
       section?.removeEventListener("mousemove", onMove);
       section?.removeEventListener("mouseleave", onLeave);

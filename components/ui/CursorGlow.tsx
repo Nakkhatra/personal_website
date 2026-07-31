@@ -33,6 +33,7 @@ export default function CursorGlow() {
       style={{
         x: springX,
         y: springY,
+        willChange: "transform",
         background: `radial-gradient(circle, rgba(${accentRgbStr}, 0.10) 0%, transparent 70%)`,
       }}
       aria-hidden

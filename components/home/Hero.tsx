@@ -8,6 +8,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { siteConfig } from "@/lib/data/siteConfig";
 import Button from "@/components/ui/Button";
 import Container from "@/components/layout/Container";
@@ -98,14 +99,16 @@ export default function Hero() {
       <div className="relative z-[2]">
         <Container>
           <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
-            {/* Text content */}
             <motion.div variants={stagger} initial="hidden" animate="show">
-              <motion.p variants={fadeUp} className="text-accent font-medium mb-4">
-                Hey, I&apos;m
+              <motion.p
+                variants={fadeUp}
+                className="font-mono text-caption text-accent tracking-widest uppercase mb-4"
+              >
+                Data Scientist &amp; AI Engineer
               </motion.p>
               <motion.h1
                 variants={fadeUp}
-                className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight font-heading text-text-primary"
+                className="text-hero font-heading text-text-primary"
               >
                 {siteConfig.shortName}
               </motion.h1>
@@ -118,12 +121,11 @@ export default function Hero() {
               <motion.p
                 variants={fadeUp}
                 transition={{ delay: 0.12 }}
-                className="mt-6 text-text-secondary leading-relaxed max-w-2xl"
+                className="mt-6 text-text-secondary leading-relaxed max-w-xl"
               >
                 {siteConfig.bio}
               </motion.p>
 
-              {/* Social icons — individually staggered */}
               <motion.div
                 variants={iconStagger}
                 initial="hidden"
@@ -155,20 +157,21 @@ export default function Hero() {
                 ))}
               </motion.div>
 
-              {/* CTA buttons */}
               <motion.div
                 variants={fadeUp}
                 transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
-                className="flex flex-wrap gap-4 mt-8"
+                className="flex flex-wrap items-center gap-5 mt-8"
               >
                 <Button href="/projects">View Projects</Button>
-                <Button href="/blogs" variant="secondary">
+                <Link
+                  href="/blogs"
+                  className="text-sm font-medium text-text-secondary hover:text-accent transition-colors underline underline-offset-4 decoration-border hover:decoration-accent"
+                >
                   Read Blog
-                </Button>
+                </Link>
               </motion.div>
             </motion.div>
 
-            {/* Portrait — parallax outer, float + glow-pulse inner */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -179,15 +182,12 @@ export default function Hero() {
               <div
                 className={`relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80${shouldReduce ? "" : " animate-float"
                   }`}
-                style={{ willChange: "transform" }}
               >
-                {/* Breathing glow ring */}
                 <div
-                  className={`absolute inset-0 rounded-full bg-gradient-to-br from-accent to-accent-hover opacity-20 blur-2xl${shouldReduce ? "" : " animate-glow-pulse"
+                  className={`absolute inset-2 rounded-full bg-gradient-to-br from-accent to-accent-hover opacity-15 blur-2xl${shouldReduce ? "" : " animate-glow-pulse"
                     }`}
                 />
-                {/* Portrait */}
-                <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-accent shadow-2xl shadow-accent/20">
+                <div className="relative w-full h-full rounded-full overflow-hidden border border-accent/40 shadow-xl shadow-accent/10">
                   <Image
                     src="/portrait_arcane.png"
                     alt={siteConfig.shortName}
@@ -195,6 +195,10 @@ export default function Hero() {
                     className="object-cover object-top"
                     priority
                     sizes="(max-width: 640px) 256px, (max-width: 1024px) 288px, 320px"
+                  />
+                  <div
+                    className="absolute inset-0 rounded-full pointer-events-none shadow-[inset_0_0_40px_rgba(0,0,0,0.35)]"
+                    aria-hidden
                   />
                 </div>
               </div>

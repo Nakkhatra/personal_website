@@ -44,11 +44,10 @@ const clusterCenters = Array.from({ length: CLUSTER_COUNT }, () => ({
   cy: Math.random(),
 }));
 
-function createStars(width: number, height: number): Star[] {
+function createStars(width: number, height: number, total: number): Star[] {
   const stars: Star[] = [];
-  const TOTAL = 200;
 
-  for (let i = 0; i < TOTAL; i++) {
+  for (let i = 0; i < total; i++) {
     // Position: 65% clustered, 35% scattered
     let fx: number, fy: number;
     if (Math.random() < 0.65) {
@@ -142,10 +141,12 @@ export default function BackgroundEffects() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let rafId: number;
+    let rafId = 0;
+    let running = true;
     const starRgb = hexToRgb(theme.colors.text.primary);
     const isMobile = typeof window !== "undefined" &&
       window.matchMedia("(pointer: coarse)").matches;
+    const starBudget = isMobile ? 40 : 90;
 
     function resize() {
       if (!canvas) return;
@@ -154,7 +155,7 @@ export default function BackgroundEffects() {
     }
     resize();
 
-    let stars = createStars(canvas.width, canvas.height);
+    let stars = createStars(canvas.width, canvas.height, starBudget);
     const mousePos = { x: -9999, y: -9999 };
     const HOVER_RADIUS = isMobile ? 0 : 120;
 
@@ -168,7 +169,10 @@ export default function BackgroundEffects() {
     let shootingInterval = 20000 + Math.random() * 15000;
 
     function draw(timestamp: number) {
-      if (!canvas || !ctx) return;
+      if (!canvas || !ctx || !running) {
+        rafId = 0;
+        return;
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       for (const star of stars) {
@@ -228,18 +232,36 @@ export default function BackgroundEffects() {
       rafId = requestAnimationFrame(draw);
     }
 
+    function startLoop() {
+      if (!rafId) rafId = requestAnimationFrame(draw);
+    }
+
+    function stopLoop() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+
+    function onVisibility() {
+      running = !document.hidden;
+      if (running) startLoop();
+      else stopLoop();
+    }
+
     const handleResize = () => {
       resize();
-      stars = createStars(canvas!.width, canvas!.height);
+      stars = createStars(canvas!.width, canvas!.height, starBudget);
     };
 
     window.addEventListener("resize", handleResize);
+    document.addEventListener("visibilitychange", onVisibility);
     if (!isMobile) window.addEventListener("mousemove", onMouseMove);
-    rafId = requestAnimationFrame(draw);
+    startLoop();
 
     return () => {
-      cancelAnimationFrame(rafId);
+      running = false;
+      stopLoop();
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("mousemove", onMouseMove);
     };
   }, [shouldReduce, theme]);
@@ -256,7 +278,6 @@ export default function BackgroundEffects() {
           background: "radial-gradient(circle, var(--nebula1) 0%, transparent 70%)",
           filter: "blur(70px)",
           animation: shouldReduce ? "none" : "blob-drift-a 45s ease-in-out infinite",
-          willChange: "transform",
         }}
       />
       {/* Blob 2 — bottom-right, cool */}
@@ -266,7 +287,6 @@ export default function BackgroundEffects() {
           background: "radial-gradient(circle, var(--nebula2) 0%, transparent 70%)",
           filter: "blur(90px)",
           animation: shouldReduce ? "none" : "blob-drift-b 58s ease-in-out infinite",
-          willChange: "transform",
         }}
       />
       {/* Blob 3 — center, accent — very faint */}
@@ -276,7 +296,6 @@ export default function BackgroundEffects() {
           background: "radial-gradient(circle, var(--nebula1) 0%, transparent 70%)",
           filter: "blur(60px)",
           animation: shouldReduce ? "none" : "blob-drift-c 38s ease-in-out infinite",
-          willChange: "transform",
         }}
       />
       {!shouldReduce && (

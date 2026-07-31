@@ -70,6 +70,7 @@ export default function FeaturedProjects() {
     <section className="py-20">
       <Container>
         <SectionHeading
+          index="01"
           title="Featured Projects"
           subtitle="Major projects from professional work"
         />

@@ -7,22 +7,22 @@ export default function TechStack() {
     <section className="py-20">
       <Container>
         <SectionHeading
+          index="04"
           title="Tech Stack"
           subtitle="Tools and technologies I work with"
         />
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {techStack.map((category) => (
             <div key={category.category}>
-              <h3 className="text-sm font-medium text-accent uppercase tracking-wider mb-4">
+              <h3 className="font-mono text-caption tracking-widest uppercase text-accent mb-4">
                 {category.category}
               </h3>
-              <ul className="space-y-2.5">
+              <ul className="flex flex-wrap gap-2">
                 {category.items.map((item) => (
                   <li
                     key={item.name}
-                    className="text-text-secondary text-sm flex items-center gap-2"
+                    className="text-sm text-text-secondary px-2.5 py-1 rounded-md border border-border/80 bg-surface/40"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent/40" />
                     {item.name}
                   </li>
                 ))}
